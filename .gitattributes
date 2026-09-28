@@ -1,3 +1,8 @@
+# Check files out exactly as stored (LF), even on Windows with
+# core.autocrlf=true. The SITL container is Linux: CRLF breaks the Python and
+# shell scripts it runs. Rules below still override this.
+* -text
+
 
 # bash gets confused if you pass in .sh files from windows
 # This breaks Vagrant for some users.

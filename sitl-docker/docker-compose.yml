@@ -1,0 +1,53 @@
+services:
+  sitl:
+    build:
+      context: .
+      args:
+        JSBSIM_REF: master
+    image: ardupilot-sitl-jsbsim:latest
+    container_name: ardupilot-sitl
+    init: true
+    stdin_open: true
+    tty: true
+
+    environment:
+      # The ArduPilot source is this git repository (the folder above this
+      # one). It is compiled incrementally at every start.
+      WAF_TARGETS: plane
+      BUILD: "1"             # 0 = skip compiling at startup
+      VEHICLE: ArduPlane
+      FRAME: jsbsim          # or jsbsim:Rascal, jsbsim:MyModel
+      LOCATION: CMAC         # KSFO has better FlightGear scenery
+      SPEEDUP: "1"
+      INSTANCE: "0"
+      WIPE_EEPROM: "0"
+      USE_MAVPROXY: "0"      # 0 = connect your GCS to tcp://127.0.0.1:5760
+      LOG_TO_STDOUT: "1"
+
+      # 3D view: set to the host running FlightGear. Resolved to an IP by the
+      # entrypoint because SITL's --fg option does not do DNS lookups.
+      # FGVIEW_HOST: host.docker.internal
+
+      # Let MAVProxy own port 5760 and forward to the host, so more than one
+      # GCS can connect. QGroundControl autoconnects to UDP 14550.
+      # MAVPROXY_OUT: "udp:host.docker.internal:14550"
+
+    ports:
+      - "5760:5760"          # serial0 - primary MAVLink, one TCP client only
+      - "5762:5762"          # serial1
+      - "5763:5763"          # serial2
+      - "14550:14550/udp"    # only used when MAVPROXY_OUT forwards here
+
+    # Makes host.docker.internal resolve on native Linux. Already built in on
+    # Docker Desktop for Mac and Windows, where this line is harmless.
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+    volumes:
+      - ./work:/home/sitl/work            # eeprom.bin, dataflash logs, terrain
+      # This repository, including the JSBSim aircraft models in
+      # Tools/autotest/aircraft. Must stay writable: SITL writes jsbsim_*.xml
+      # and aircraft/<model>/reset.xml into it at runtime (git-ignored).
+      - ..:/opt/ardupilot
+      # Edit the entrypoint without rebuilding:
+      # - ./entrypoint.sh:/usr/local/bin/entrypoint.sh:ro

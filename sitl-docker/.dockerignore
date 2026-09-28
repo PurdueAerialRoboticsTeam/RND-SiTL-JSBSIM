@@ -1,0 +1,6 @@
+work/
+fg-aircraft/
+logs/
+.DS_Store
+*.BIN
+*.tlog

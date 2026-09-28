@@ -1,0 +1,11 @@
+# The container is Linux. A shell script saved with CRLF fails there with
+# errors like "/usr/bin/env: 'bash\r': No such file or directory".
+# These rules keep LF endings even when the files are edited on Windows.
+* text=auto eol=lf
+*.sh   text eol=lf
+*.py   text eol=lf
+Dockerfile text eol=lf
+*.yml  text eol=lf
+
+# PowerShell is happier with CRLF and never enters the container.
+*.ps1  text eol=crlf

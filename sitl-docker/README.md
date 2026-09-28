@@ -24,8 +24,8 @@ For the applications and step-by-step instructions, follow
 In short:
 
 ```bash
-git clone --recursive https://github.com/OWNER/REPO.git
-cd REPO/sitl-docker
+git clone --recursive https://github.com/PurdueAerialRoboticsTeam/RND-SiTL-JSBSIM.git
+cd RND-SiTL-JSBSIM/sitl-docker
 docker compose build
 docker compose run --rm --service-ports sitl
 ```

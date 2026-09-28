@@ -63,16 +63,16 @@ Docker downloads everything needed to build the simulator inside its container.
    gh auth setup-git
    ```
 
-4. Clone the team repository (replace `OWNER/REPO` with its name on GitHub) and go into its `sitl-docker` folder. The clone also downloads ArduPilot's submodules and takes a few minutes:
+4. Clone the team repository and go into its `sitl-docker` folder. The clone also downloads ArduPilot's submodules and takes a few minutes:
 
    ```bash
    cd ~
-   git clone --recursive https://github.com/OWNER/REPO.git
-   cd REPO/sitl-docker
+   git clone --recursive https://github.com/PurdueAerialRoboticsTeam/RND-SiTL-JSBSIM.git
+   cd RND-SiTL-JSBSIM/sitl-docker
    ls Dockerfile
    ```
 
-   `ls Dockerfile` should print `Dockerfile`. If you open a new Ubuntu window later, run `cd ~/REPO/sitl-docker` first.
+   `ls Dockerfile` should print `Dockerfile`. If you open a new Ubuntu window later, run `cd ~/RND-SiTL-JSBSIM/sitl-docker` first.
 
 To browse or edit the files from Windows, type `\\wsl$\Ubuntu\home` in File Explorer's address bar, or run `explorer.exe .` in the Ubuntu window. [VS Code](https://code.visualstudio.com/) with its **WSL** extension also works well: run `code ..` from the `sitl-docker` folder.
 
@@ -101,7 +101,7 @@ This starts the Windows FlightGear launcher from Ubuntu. FlightGear should open 
 Open a **second** Ubuntu window and run:
 
 ```bash
-cd ~/REPO/sitl-docker
+cd ~/RND-SiTL-JSBSIM/sitl-docker
 docker compose run --rm --service-ports -e FGVIEW_HOST=host.docker.internal sitl
 ```
 
@@ -140,7 +140,7 @@ Get everyone else's changes before starting the simulator with `git pull` follow
 - **`docker` is not found or Docker cannot connect:** Start Docker Desktop, wait for the engine to be running, check **Settings → Resources → WSL integration** is on for Ubuntu, then open a new Ubuntu window.
 - **Docker says WSL is missing or outdated:** Revisit step 1, run `wsl --update` in PowerShell, restart Windows, then open Docker Desktop.
 - **The build runs out of memory:** Check that `.wslconfig` is in your Windows user folder and does not end in `.txt`. Quit Docker Desktop, run `wsl --shutdown`, restart Docker Desktop, and try again. On a PC with less than 16 GB of RAM, the build may still need more memory than is available.
-- **`no configuration file provided` or `Dockerfile` not found:** The Ubuntu window is in the wrong folder. Run `cd ~/REPO/sitl-docker`.
+- **`no configuration file provided` or `Dockerfile` not found:** The Ubuntu window is in the wrong folder. Run `cd ~/RND-SiTL-JSBSIM/sitl-docker`.
 - **`checked out with Windows (CRLF) line endings`:** The repository was cloned with Git for Windows instead of inside Ubuntu. Clone it again in Ubuntu as in step 3.
 - **`git submodules are missing`:** Run `git submodule update --init --recursive` in the repository.
 - **FlightGear launcher says `fgfs.exe not found`:** Install FlightGear in its default folder, or read the launcher's `-Fgfs` option if you installed it somewhere else.

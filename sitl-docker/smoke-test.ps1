@@ -59,7 +59,7 @@ try {
     Check "autotest writable"     { InContainer 'test -w /opt/ardupilot/Tools/autotest' }
     Check "not running as root"   { InContainer '[ "$(id -u)" -ne 0 ]' }
     Check "pymavlink present"     { InContainer 'python3 -c "import pymavlink"' }
-    Check "entrypoint has LF endings" { InContainer '! grep -q "\r" /usr/local/bin/entrypoint.sh' }
+    Check "entrypoint has LF endings" { InContainer '! grep -q "$(printf "\r")" /usr/local/bin/entrypoint.sh' }
 
     Write-Host "== 4. start the simulator ==" -ForegroundColor Cyan
     docker compose up -d

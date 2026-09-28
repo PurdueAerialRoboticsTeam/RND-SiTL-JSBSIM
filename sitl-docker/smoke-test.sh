@@ -44,7 +44,7 @@ check "arduplane built"         in_container 'test -x /opt/ardupilot/build/sitl/
 check "autotest writable"       in_container 'test -w /opt/ardupilot/Tools/autotest'
 check "not running as root"     in_container '[ "$(id -u)" -ne 0 ]'
 check "pymavlink present"       in_container 'python3 -c "import pymavlink"'
-check "entrypoint LF endings"   in_container '! grep -q "\r" /usr/local/bin/entrypoint.sh'
+check "entrypoint LF endings"   in_container '! grep -q "$(printf "\r")" /usr/local/bin/entrypoint.sh'
 check "jsbsim params exist"     in_container 'test -f /opt/ardupilot/Tools/autotest/default_params/plane-jsbsim.parm'
 
 echo "== 4. start the simulator =="

@@ -18,9 +18,14 @@ repository, so everyone flies the same source and the same aircraft files.
 
 ## First-time setup
 
-You need Git, Docker Desktop and access to this private GitHub repository.
-For the applications and step-by-step instructions, follow
-[README-MACOS.md](README-MACOS.md) or [README-WINDOWS.md](README-WINDOWS.md).
+You need Git, Docker Desktop, QGroundControl, FlightGear and access to this
+private GitHub repository.
+
+- **Quick setup** (minimum steps): [SETUP-MACOS.md](SETUP-MACOS.md),
+  [SETUP-WINDOWS.md](SETUP-WINDOWS.md)
+- **Detailed guides** (explanations, troubleshooting): [README-MACOS.md](README-MACOS.md),
+  [README-WINDOWS.md](README-WINDOWS.md)
+
 In short:
 
 ```bash

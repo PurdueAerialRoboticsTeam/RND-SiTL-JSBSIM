@@ -16,6 +16,46 @@ repository, so everyone flies the same source and the same aircraft files.
 └── sitl-docker/                   this folder: Docker setup, guides, logs in work/
 ```
 
+## How it works
+
+```
+GitHub repo (RND-SiTL-JSBSIM)
+      │  git clone: copies the ArduPilot source and aircraft files to your computer
+      ▼
+RND-SiTL-JSBSIM/ on your computer       the files you edit
+      │  mounted into the container at /opt/ardupilot (live, not a copy)
+      ▼
+Docker container (image: build tools + JSBSim, no ArduPilot)
+      │  on every start: compiles ArduPilot from your local files
+      ▼
+ArduPlane SITL + JSBSim run the freshly compiled code
+```
+
+1. **Cloning puts ArduPilot on your computer.** The full source, including the
+   aircraft models in `Tools/autotest/aircraft/`, is ordinary files in your
+   clone. That is the only copy of ArduPilot involved.
+2. **The container uses those files directly.** `docker-compose.yml` mounts the
+   repository folder into the container. Nothing is copied into the image, so
+   there is no ArduPilot image to pull or update: the image only holds the
+   compilers, Python tools and JSBSim.
+3. **Every start compiles from your local files.** The first start compiles
+   everything (about 4 minutes); later starts recompile only what changed (a
+   few seconds). Edit a file, stop the simulator with Ctrl+C, start it again,
+   and your edit is what flies.
+
+When do you need to do what?
+
+| You changed | What to do |
+|---|---|
+| An aircraft file or ArduPilot source | Restart the simulator. No image rebuild. |
+| Pulled teammates' changes with `git pull` | Restart the simulator. Rebuild the image first only if the pull changed `Dockerfile` or `entrypoint.sh`. |
+| `Dockerfile` (for example the JSBSim version) | `docker compose build`, then restart. |
+| `entrypoint.sh` | `docker compose build`, then restart (it is copied into the image). |
+
+Compiled ArduPilot is not shared through git. Each computer compiles its own
+into `build/`, which git ignores. The compiled program differs between Apple
+Silicon Macs and Intel/AMD PCs, and would be stale after every edit anyway.
+
 ## First-time setup
 
 You need Git, Docker Desktop, QGroundControl, FlightGear and access to this

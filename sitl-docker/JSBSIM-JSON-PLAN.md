@@ -74,11 +74,11 @@ Decisions:
 | `Tools/autotest/aircraft/Rascal/Controls.xml` | new | Rascal bindings matching ArduPlane's default SERVO1..4. |
 | `Tools/autotest/default_params/plane-jsbsim-json.parm` | new | Overrides on top of `plane-jsbsim.parm` for the JSON frame. |
 | `Tools/autotest/pysim/vehicleinfo.py` | changed | New ArduPlane frame `jsbsim-json` with `"model": "JSON:127.0.0.1"`. The exact-match lookup in `options_for_frame()` runs before the `startswith("jsbsim")` fallback, so it does not collide with `jsbsim`. |
-| `sitl-docker/Dockerfile` | changed | `pip install jsbsim==<same version as JSBSIM_REF>` into the venv; pin `JSBSIM_REF` to that tag. |
+| `sitl-docker/Dockerfile` | changed | Build JSBSim's Python module from the same pinned source (`JSBSIM_REF=v1.3.3`, `-DBUILD_PYTHON_MODULE=ON`, install into `/opt/venv`). Not `pip install jsbsim`: PyPI 1.3.3 has no Linux aarch64 wheel, which is what Docker runs on Apple Silicon. |
 | `sitl-docker/entrypoint.sh` | changed | `SIM_BACKEND=jsbsim\|json`. For `json`: start the bridge in the background, then `sim_vehicle.py --frame jsbsim-json`. Kill the bridge on exit. |
 | `sitl-docker/docker-compose.yml` | changed | `SIM_BACKEND`, `JSBSIM_MODEL` (aircraft name), `CONTROLS` (optional path) env vars. |
 | `sitl-docker/smoke_test.py` | changed | Also run with `SIM_BACKEND=json`. |
-| `libraries/SITL/SIM_JSON.cpp` | changed (small) | Fix the rangefinder loop (see §10). |
+| `libraries/SITL/SIM_JSON.cpp` | done | Rangefinder loop fixed from upstream (see §10). |
 
 ## 5. Binding file: `Controls.xml`
 
@@ -245,19 +245,81 @@ Handled by the bridge, not by bindings:
 
 Property names are checked against the pinned JSBSim version in Phase 1.
 
-## 8. Timing
+## 8. Lockstep
 
-- SITL sends `frame_rate` = `SIM_RATE_HZ` (1200 Hz by default in SITL). The
-  bridge sets JSBSim's `dt = 1/frame_rate` and calls `fdm.run()` once per
-  packet. If the frame rate changes, `dt` follows.
-- `frame_count` repeated → resend the last state without stepping (SITL
-  resends after 1 s with no reply).
-- `frame_count` goes backwards → SITL restarted → `reset_to_initial_conditions`
-  and restart the counter.
-- Budget at 1200 Hz is 833 µs per frame. Phase 1 measures Python's cost; if it
-  does not fit, `plane-jsbsim-json.parm` sets `SIM_RATE_HZ 400` (ArduPlane's
-  main loop runs at 50 Hz, 300 Hz with QuadPlane enabled, so 400 stays above
-  both), and §12 applies if even that does not fit.
+The bridge runs in strict lockstep with SITL: JSBSim never advances unless
+ArduPilot asked for a frame, and ArduPilot never advances unless JSBSim
+answered. Speed-up is out of scope for now (SITL's `sync_frame_time()`
+already throttles wall-clock time; the bridge only has to answer quickly).
+
+### What SITL does (`libraries/SITL/SIM_JSON.cpp`)
+
+1. `update()` sends one servo packet (`output_servos()`), then blocks in
+   `recv_fdm()` until a JSON line arrives (100 ms receive timeouts, servo
+   packet resent every ~1 s with the **same** `frame_count`).
+2. It advances its own clock by `timestamp − last_timestamp` from the JSON,
+   never by wall-clock time. A backwards `timestamp` is treated as a physics
+   reset (`deltat = 0`).
+3. `frame_count` increments once per packet sent, and resets to 0 when SITL
+   restarts.
+4. If the JSON contains `"no_lockstep": true`, SITL stops waiting and free-runs.
+   The bridge never sends it.
+
+### What the bridge does
+
+```
+state: last_count = None, last_reply = None
+
+loop:
+    pkt, addr = recv()                       # blocking, no timeout
+    if magic not in (18458, 29569): drop
+    if last_count is not None and pkt.frame_count == last_count:
+        send(last_reply, addr)               # SITL resend: answer, do not step
+        continue
+    if last_count is not None and pkt.frame_count < last_count:
+        fdm.reset_to_initial_conditions(0)   # SITL restarted
+        re-run ground trim; clear engine auto-start flags
+    dt = 1 / pkt.frame_rate                  # follows SIM_RATE_HZ changes
+    if dt != fdm.get_delta_t(): fdm.set_dt(dt)
+    apply bindings(pkt.pwm)
+    fdm.run()                                # exactly one JSBSim step
+    last_reply = build_json(fdm)             # timestamp = simulation/sim-time-sec
+    send(last_reply, addr)
+    last_count = pkt.frame_count
+```
+
+Rules that keep it deterministic:
+
+- **One packet → one step → one reply.** No timers, threads or wall-clock
+  reads in the loop. The same SITL inputs give the same flight every run.
+- **Reply to the packet's source address**, so the bridge never needs to know
+  SITL's port, and a restarted SITL is picked up automatically.
+- **Timestamps strictly increase** within a session: `sim-time-sec` after the
+  step. The first reply after a reset restarts near 0, which SITL already
+  treats as a reset.
+- **No stale packets.** Before handling a packet, drain the socket and keep
+  only the newest one, so a burst of SITL resends after a pause does not make
+  the bridge step several times for one frame. A drained packet with a new
+  `frame_count` that is not the newest is logged as a dropped frame.
+- **`frame_rate` is SITL's step, not a hint.** JSBSim's `dt` is set to
+  exactly `1/frame_rate` so both clocks agree. SITL defaults to
+  `SIM_RATE_HZ 1200` (833 µs per frame); Phase 1 measures the bridge's time
+  per frame. If it is too slow, `plane-jsbsim-json.parm` sets
+  `SIM_RATE_HZ 400` (ArduPlane's main loop runs at 50 Hz, 300 Hz with
+  QuadPlane enabled, so 400 stays above both), and §12 applies if even that
+  does not fit.
+
+### Lockstep tests (Phase 1)
+
+- Unit: a fake SITL socket sends counts 0,1,1,2 → bridge steps 3 times, replies 4
+  times, the duplicate reply is byte-identical.
+- Unit: counts 5,6,0 → reset is called once, timestamp of the reply to 0 is
+  below the reply to 6.
+- Integration: pause SITL for 10 s, resume, check that JSBSim's
+  `sim-time-sec` and SITL's `SIM_TIME` (log `SIM` messages) still agree to
+  within one frame.
+- Integration: two identical 3-minute AUTO flights give identical dataflash
+  `SIM` positions (determinism).
 
 ## 9. Docker and launch
 
@@ -281,9 +343,11 @@ The entrypoint, when `SIM_BACKEND=json`:
 FlightGear view keeps working: `--enable-fgview` / `--fg` is SITL's own output
 from its vehicle state, independent of the physics backend.
 
-## 10. Bug to fix on the way: rangefinder parsing in SIM_JSON
+## 10. Fixed: rangefinder parsing in SIM_JSON
 
-`libraries/SITL/SIM_JSON.cpp:465` in this tree:
+Done on this branch: ArduPilot was updated to Plane-4.7.2, and the upstream
+fix (`e5e9709`, not in any Plane release yet) was cherry-picked on top. Kept
+here for the record. Before the fix, `libraries/SITL/SIM_JSON.cpp:465` read:
 
 ```cpp
 for (uint8_t i=7; i<13; i++) {
@@ -293,8 +357,8 @@ for (uint8_t i=7; i<13; i++) {
 ```
 
 Bits 7..12 are `EULER_ATT`, `QUAT_ATT`, `VELOCITY`, `RNG_1..3` (see `DataKey`
-in `SIM_JSON.h`), so `rng_4..6` are never read and `rng_1..3` are copied
-whenever attitude or velocity arrive. Upstream master already has the fix:
+in `SIM_JSON.h`), so `rng_4..6` were never read and `rng_1..3` were copied
+whenever attitude or velocity arrived. Upstream's fix, now in this tree:
 
 ```cpp
 for (uint8_t i=0; i<6; i++) {
@@ -302,8 +366,6 @@ for (uint8_t i=0; i<6; i++) {
     rangefinder_m[i] = state.rng[i];
 }
 ```
-
-Apply it as its own commit (`SITL: fix JSON rangefinder bitmask indexing`).
 
 ## 11. Phases
 
@@ -337,7 +399,7 @@ Each phase ends with something that runs.
 | Risk | Mitigation |
 |---|---|
 | Python too slow at 1200 Hz | Measure in Phase 1. `SIM_RATE_HZ 400` first; then move the hot loop to C++ against libJSBSim (same bindings file, same JSON). |
-| `pip install jsbsim` version differs from the `JSBSim` binary built from `JSBSIM_REF=master` | Pin both to one release tag. The bridge does not use the binary, but aircraft files should be validated against one version. |
+| Python module and `JSBSim` binary from different JSBSim versions | Both are built from one checkout at the pinned `JSBSIM_REF` (now `v1.3.3`), so they cannot differ. |
 | IMU at `EYEPOINT` instead of CG/autopilot location gives lever-arm accelerations | Document it; set `EYEPOINT` to the autopilot position in each model. |
 | PteroSim aircraft licences (GPL, LGPL, CERN-OHL-S, NASA media terms) | Copy an aircraft only with its `LICENSE` and `NOTICE`, and record the source commit. Copying is not part of this plan. |
 | Gimbal / Gripper rows in PteroSim files have no JSBSim property | Ignored with a warning unless the row also has `property=`. |

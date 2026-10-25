@@ -17,6 +17,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 pytest.importorskip('jsbsim')
 
+import controls  # noqa: E402
 import jsbsim_json_bridge as jb  # noqa: E402
 from sitl_protocol import build_servo_packet, parse_servo_packet  # noqa: E402
 
@@ -35,8 +36,8 @@ class FakeModel:
     def set_rate(self, rate_hz):
         self.rate_hz = rate_hz
 
-    def apply_servos(self, pwm):
-        pass
+    def dt(self):
+        return 1.0 / self.rate_hz
 
     def step(self):
         self.t += 1.0 / self.rate_hz
@@ -71,7 +72,8 @@ def timestamp(reply):
 
 def make_bridge():
     model = FakeModel()
-    return model, jb.Bridge(model, jb.Stats(0))
+    bindings = controls.Bindings(jb.default_rows(0.14), lambda name, value: None)
+    return model, jb.Bridge(model, bindings, jb.Stats(0))
 
 
 def test_resend_is_answered_without_stepping():
@@ -98,32 +100,13 @@ def test_timestep_follows_frame_rate():
     assert model.rate_hz == 1200
 
 
-def test_servo_lag_matches_first_order_filter():
-    lag = jb.ServoLag(0.14)
-    assert lag.apply(0.0, 0.001) == 0.0
-    v = 0.0
-    for _ in range(140):
-        v = lag.apply(1.0, 0.001)
-    # after one time constant a first-order lag is about 63% of the way
-    assert 0.6 < v < 0.66
-
-
-def test_servo_lag_zero_is_passthrough():
-    lag = jb.ServoLag(0.0)
-    assert lag.apply(0.3, 0.001) == 0.3
-    assert lag.apply(-0.7, 0.001) == -0.7
-
-
-def test_binding_normalisation_and_clamp():
-    angle = jb.Binding(0, 'p', 'angle', 0)
-    rng = jb.Binding(2, 'p', 'range', 0)
-    assert angle.normalise(1500) == 0.0
-    assert angle.normalise(2000) == 1.0
-    assert angle.normalise(1000) == -1.0
-    assert angle.normalise(2200) == 1.0
-    assert rng.normalise(1000) == 0.0
-    assert rng.normalise(1500) == 0.5
-    assert rng.normalise(900) == 0.0
+def test_default_rows_match_the_jsbsim_frame():
+    rows = jb.default_rows(0.14)
+    assert [(r.channel, r.properties[0]) for r in rows] == [
+        (0, 'fcs/aileron-cmd-norm'), (1, 'fcs/elevator-cmd-norm'),
+        (2, 'fcs/throttle-cmd-norm'), (3, 'fcs/rudder-cmd-norm')]
+    # plane-jsbsim.parm reverses elevator and rudder itself, so nothing is mirrored here
+    assert not any(r.mirrored or r.invert for r in rows)
 
 
 def test_parse_home_and_location():
@@ -136,13 +119,18 @@ def test_parse_home_and_location():
 
 @pytest.fixture(scope='module')
 def rascal():
-    bindings = [jb.Binding(ch, prop, kind, 0.14) for ch, prop, kind in jb.DEFAULT_BINDINGS]
     home = jb.read_location('CMAC', jb.DEFAULT_ROOT)
-    return jb.JSBSimModel(jb.DEFAULT_ROOT, 'Rascal', home, 1.3, 13.0, bindings)
+    return jb.JSBSimModel(jb.DEFAULT_ROOT, 'Rascal', home, 1.3, 13.0)
+
+
+def rascal_bridge(model):
+    rows = jb.default_rows(0.14)
+    controls.check_properties(rows, model.has_property)
+    return jb.Bridge(model, controls.Bindings(rows, model.set_property, model.start_engine), jb.Stats(0))
 
 
 def test_rascal_runs_in_lockstep(rascal):
-    bridge = jb.Bridge(rascal, jb.Stats(0))
+    bridge = rascal_bridge(rascal)
     pwm = [1500, 1500, 1000, 1500] + [0] * 12
     first = json.loads(bridge.handle(parse_servo_packet(build_servo_packet(1200, 0, pwm))).decode())
     assert first['timestamp'] == pytest.approx(1.0 / 1200)
@@ -159,7 +147,7 @@ def test_rascal_runs_in_lockstep(rascal):
 
 
 def test_rascal_reset_restarts_time(rascal):
-    bridge = jb.Bridge(rascal, jb.Stats(0))
+    bridge = rascal_bridge(rascal)
     pwm = [1500, 1500, 1000, 1500] + [0] * 12
     for n in (10, 11):
         bridge.handle(parse_servo_packet(build_servo_packet(1200, n, pwm)))

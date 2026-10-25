@@ -9,7 +9,9 @@ with --model JSON:127.0.0.1, e.g.
   ./jsbsim_json_bridge.py --aircraft Rascal --location CMAC
   sim_vehicle.py -v ArduPlane --frame jsbsim-json --location CMAC
 
-The plan for this backend is sitl-docker/JSBSIM-JSON-PLAN.md.
+Servo outputs are bound to JSBSim properties by the aircraft's Controls.xml
+(controls.py), or by built-in defaults equal to the jsbsim frame's when the
+aircraft has none. The plan for this backend is sitl-docker/JSBSIM-JSON-PLAN.md.
 
 AP_FLAKE8_CLEAN
 '''
@@ -23,6 +25,7 @@ import time
 
 import jsbsim
 
+import controls
 from sitl_protocol import (
     Lockstep,
     REPEAT,
@@ -36,48 +39,20 @@ FT_TO_M = 0.3048
 REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), *(['..'] * 5)))
 DEFAULT_ROOT = os.path.join(REPO_ROOT, 'Tools', 'autotest')
 
-# Phase 1 bindings, the same as the C++ jsbsim backend (SIM_JSBSim.cpp):
-# SERVO1..4 drive aileron, elevator, throttle and rudder. Each is filtered the
-# way SITL filters servos for that backend, a first-order lag whose time
-# constant is SIM_SERVO_SPEED (ServoModel::apply_simple_filter).
-DEFAULT_BINDINGS = (
-    # channel, property, normalisation
-    (0, 'fcs/aileron-cmd-norm', 'angle'),
-    (1, 'fcs/elevator-cmd-norm', 'angle'),
-    (2, 'fcs/throttle-cmd-norm', 'range'),
-    (3, 'fcs/rudder-cmd-norm', 'angle'),
-)
 
-
-class ServoLag:
-    '''first-order low-pass, as ArduPilot's LowPassFilterFloat with time constant tau'''
-
-    def __init__(self, tau):
-        self.tau = tau
-        self.value = None
-
-    def apply(self, target, dt):
-        if self.value is None or self.tau <= 0:
-            self.value = target
-        else:
-            self.value += (dt / (dt + self.tau)) * (target - self.value)
-        return self.value
-
-
-class Binding:
-    def __init__(self, channel, prop, kind, lag):
-        self.channel = channel
-        self.prop = prop
-        self.kind = kind
-        self.filter = ServoLag(lag)
-
-    def normalise(self, pwm):
-        if self.kind == 'range':
-            return min(max((pwm - 1000) / 1000.0, 0.0), 1.0)
-        return min(max((pwm - 1500) / 500.0, -1.0), 1.0)
-
-    def reset(self):
-        self.filter.value = None
+def default_rows(lag):
+    '''
+    the C++ jsbsim backend's bindings (SIM_JSBSim.cpp): SERVO1..4 drive
+    aileron, elevator, throttle and rudder, no mirroring (plane-jsbsim.parm
+    reverses elevator and rudder with SERVO2/4_REVERSED instead), each with
+    SITL's servo lag
+    '''
+    return [
+        controls.Row(0, ['fcs/aileron-cmd-norm'], (-1, 1), (-1, 1), lag=lag),
+        controls.Row(1, ['fcs/elevator-cmd-norm'], (-1, 1), (-1, 1), lag=lag),
+        controls.Row(2, ['fcs/throttle-cmd-norm'], (0, 1), (0, 1), lag=lag),
+        controls.Row(3, ['fcs/rudder-cmd-norm'], (-1, 1), (-1, 1), lag=lag),
+    ]
 
 
 def read_location(name, autotest_dir):
@@ -104,17 +79,20 @@ def parse_home(text):
 class JSBSimModel:
     '''one JSBSim aircraft, stepped one SITL frame at a time'''
 
-    def __init__(self, root, aircraft, home, agl_m, pitch_deg, bindings, debug_level=0):
-        self.home = home
-        self.agl_m = agl_m
-        self.pitch_deg = pitch_deg
-        self.bindings = bindings
+    def __init__(self, root, aircraft, home, agl_m, pitch_deg, aircraft_dir=None,
+                 start_engines=True, debug_level=0):
+        self.start_engines = start_engines
         self.rate_hz = None
+        # properties written by bindings, which engine start must leave alone
+        self.bound = set()
 
         self.fdm = jsbsim.FGFDMExec(root)
         self.fdm.set_debug_level(debug_level)
+        if aircraft_dir is not None:
+            self.fdm.set_aircraft_path(aircraft_dir)
         if not self.fdm.load_model(aircraft):
-            raise RuntimeError("JSBSim could not load aircraft %s from %s" % (aircraft, root))
+            raise RuntimeError("JSBSim could not load aircraft %s from %s" % (
+                aircraft, aircraft_dir or os.path.join(root, 'aircraft')))
         self.num_engines = self.fdm.get_propulsion().get_num_engines()
 
         lat, lng, alt, hdg = home
@@ -131,15 +109,34 @@ class JSBSimModel:
         self._start()
 
     def _start(self):
-        '''what happens after every initial condition: engines on, settle on the ground'''
-        for n in range(self.num_engines):
-            self.fdm['propulsion/engine[%u]/set-running' % n] = 1
-        for b in self.bindings:
-            b.reset()
+        '''what happens after every initial condition: engines on if asked, settle on the ground'''
+        if self.start_engines:
+            for n in range(self.num_engines):
+                self.start_engine(n)
         try:
             self.fdm.do_trim(2)  # ground trim, as the C++ backend's script does
         except Exception as ex:
             print("bridge: ground trim failed (%s), continuing untrimmed" % ex)
+
+    def start_engine(self, n):
+        '''
+        start engine n so that it runs at idle, as PteroSim does on the first
+        throttle command: a piston engine also needs mixture and magnetos,
+        which are set unless a binding controls them
+        '''
+        if n >= self.num_engines:
+            return
+        for prop, on in (('fcs/mixture-cmd-norm[%u]' % n, 1.0), ('propulsion/magneto_cmd', 3)):
+            if prop not in self.bound and self.has_property(prop) and self.fdm[prop] == 0:
+                self.fdm[prop] = on
+        # FGPropulsion::InitRunning(n); engine[n]/set-running does not start a piston engine
+        self.fdm['propulsion/set-running'] = n
+
+    def has_property(self, name):
+        return self.fdm.get_property_manager().hasNode(name)
+
+    def set_property(self, name, value):
+        self.fdm[name] = value
 
     def reset(self):
         self.fdm.reset_to_initial_conditions(0)
@@ -150,14 +147,8 @@ class JSBSimModel:
             self.rate_hz = rate_hz
             self.fdm.set_dt(1.0 / rate_hz)
 
-    def apply_servos(self, pwm):
-        dt = self.fdm.get_delta_t()
-        for b in self.bindings:
-            value = pwm[b.channel]
-            if value == 0:
-                # channel not output by ArduPilot: hold the last command
-                continue
-            self.fdm[b.prop] = b.filter.apply(b.normalise(value), dt)
+    def dt(self):
+        return self.fdm.get_delta_t()
 
     def step(self):
         return self.fdm.run()
@@ -225,8 +216,9 @@ def receive_newest(sock):
 class Bridge:
     '''one servo packet in, one reply out; see Lockstep for the rules'''
 
-    def __init__(self, model, stats):
+    def __init__(self, model, bindings, stats):
         self.model = model
+        self.bindings = bindings
         self.stats = stats
         self.lockstep = Lockstep()
 
@@ -238,10 +230,11 @@ class Bridge:
             print("bridge: SITL restarted (frame %u after %u), resetting JSBSim" % (
                 pkt.frame_count, self.lockstep.last_count))
             self.model.reset()
+            self.bindings.reset()
 
         t0 = time.perf_counter()
         self.model.set_rate(pkt.frame_rate)
-        self.model.apply_servos(pkt.pwm)
+        self.bindings.apply(pkt.pwm, self.model.dt())
         self.model.step()
         reply = encode_state(self.model.state())
         self.stats.add(time.perf_counter() - t0)
@@ -266,10 +259,23 @@ def run(sock, bridge):
         sock.sendto(bridge.handle(pkt), addr)
 
 
+def find_controls(args, aircraft_dir):
+    '''the Controls.xml to use, or None for the built-in defaults'''
+    if args.controls == 'none':
+        return None
+    if args.controls is not None:
+        return args.controls
+    path = os.path.join(aircraft_dir, args.aircraft, 'Controls.xml')
+    return path if os.path.exists(path) else None
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__.split('\n\n')[0])
-    parser.add_argument('--aircraft', default='Rascal', help='JSBSim aircraft under <root>/aircraft')
+    parser.add_argument('--aircraft', default='Rascal', help='JSBSim aircraft name')
+    parser.add_argument('--aircraft-dir', help='folder holding <aircraft>/<aircraft>.xml (default: <root>/aircraft)')
     parser.add_argument('--root', default=DEFAULT_ROOT, help='JSBSim root directory (default: %(default)s)')
+    parser.add_argument('--controls', help='Controls.xml to use (default: the aircraft\'s own, if any); '
+                        '"none" for the built-in SERVO1..4 bindings')
     home = parser.add_mutually_exclusive_group()
     home.add_argument('--location', default='CMAC', help='name from Tools/autotest/locations.txt')
     home.add_argument('--home', help='lat,lng,alt,heading; overrides --location')
@@ -278,27 +284,53 @@ def main():
     parser.add_argument('--agl', type=float, default=1.3, help='initial height above ground, m')
     parser.add_argument('--pitch', type=float, default=13.0, help='initial pitch, deg')
     parser.add_argument('--servo-lag', type=float, default=0.14,
-                        help='servo time constant, s, as SIM_SERVO_SPEED; 0 disables')
+                        help='servo time constant, s, as SIM_SERVO_SPEED, for rows without lag=; 0 disables')
+    parser.add_argument('--start-engines', action='store_true',
+                        help='start every engine at reset even with a Controls.xml (Motor rows start them otherwise)')
     parser.add_argument('--stats', type=float, default=10.0, help='seconds between timing reports, 0 disables')
     parser.add_argument('--jsbsim-debug', type=int, default=0, help='JSBSim debug level')
     args = parser.parse_args()
     # keep log lines in order with SITL's when both go to one file or docker log
     sys.stdout.reconfigure(line_buffering=True)
 
+    aircraft_dir = os.path.abspath(args.aircraft_dir) if args.aircraft_dir else os.path.join(args.root, 'aircraft')
+    controls_path = find_controls(args, aircraft_dir)
+    warnings = []
+    if controls_path is None:
+        rows = default_rows(args.servo_lag)
+    else:
+        try:
+            rows, warnings = controls.load(controls_path, lag=args.servo_lag)
+        except controls.BindingError as ex:
+            print("bridge: %s" % ex)
+            return 1
+
     home_pos = parse_home(args.home) if args.home else read_location(args.location, DEFAULT_ROOT)
-    bindings = [Binding(ch, prop, kind, args.servo_lag) for ch, prop, kind in DEFAULT_BINDINGS]
-    model = JSBSimModel(args.root, args.aircraft, home_pos, args.agl, args.pitch, bindings, args.jsbsim_debug)
+    model = JSBSimModel(args.root, args.aircraft, home_pos, args.agl, args.pitch,
+                        aircraft_dir=args.aircraft_dir and aircraft_dir,
+                        start_engines=controls_path is None or args.start_engines,
+                        debug_level=args.jsbsim_debug)
+    try:
+        controls.check_properties(rows, model.has_property)
+    except controls.BindingError as ex:
+        print("bridge: %s" % ex)
+        return 1
+    model.bound = {p for r in rows for p in r.properties}
+    bindings = controls.Bindings(rows, model.set_property, model.start_engine)
 
     print("bridge: JSBSim %s, aircraft %s, %u engine(s), home %.6f,%.6f,%.1f,%.0f" % (
         jsbsim.__version__, args.aircraft, model.num_engines, *home_pos))
-    for b in bindings:
-        print("bridge:   SERVO%-2u -> %-24s %s, lag %.2fs" % (b.channel + 1, b.prop, b.kind, b.filter.tau))
+    print("bridge: bindings from %s" % (controls_path or 'built-in defaults (the jsbsim frame\'s)'))
+    for r in rows:
+        print("bridge:   %s" % r.describe())
+    for w in warnings:
+        print("bridge: warning: %s" % w)
 
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.bind((args.bind, args.port))
     print("bridge: waiting for SITL on udp %s:%u" % (args.bind, args.port))
     try:
-        run(sock, Bridge(model, Stats(args.stats)))
+        run(sock, Bridge(model, bindings, Stats(args.stats)))
     except KeyboardInterrupt:
         pass
     return 0

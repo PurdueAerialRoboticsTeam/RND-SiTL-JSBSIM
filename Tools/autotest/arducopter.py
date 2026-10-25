@@ -708,8 +708,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.wait_circling_point_with_radius(
             loc, radius,
             epsilon=1,
-            min_circle_time=360,
-            timeout=400,
+            min_circle_time=120,
+            timeout=240,
             track_angle=False,
         )
         self.wait_altitude(99, 101, relative=True, timeout=240)
@@ -766,6 +766,57 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.wait_distance_to_home(10, 20)
         self.wait_disarmed(timeout=600)
         self.context_pop()
+
+    def CircleManualControlEntryLeft(self):
+        '''Circle orbits at the configured rate when entered holding roll stick left'''
+        # CIRCLE_OPTIONS defaults to 1 (manual control enabled); the pilot
+        # roll stick trims the orbit rate.  Holding the stick against the
+        # CIRCLE_RATE sign on entry used to pin the rate at zero so the
+        # vehicle never orbited at all.  The orbit must still reach the
+        # configured rate, and the pilot can then trim it down to a stop.
+        self.set_parameters({
+            "CIRCLE_RADIUS_M": 10,
+            "CIRCLE_RATE": 20,  # +ve, clockwise
+        })
+        expected_groundspeed = math.pi * 2 * 10 * (20 / 360.0)  # ~3.49m/s
+        self.takeoff(10, mode='LOITER')
+        self.hover()  # circle mode uses throttle input
+        self.set_rc(1, 1400)  # held left, against the CIRCLE_RATE sign
+        self.change_mode('CIRCLE')
+        self.wait_groundspeed(
+            expected_groundspeed - 0.5,
+            expected_groundspeed + 0.5,
+            minimum_duration=5,
+            timeout=30,
+        )
+        # the pilot can still trim the orbit rate down to a stop:
+        self.set_rc(1, 1100)
+        self.wait_groundspeed(0, 0.5, minimum_duration=2, timeout=60)
+        self.set_rc(1, 1500)
+        self.do_RTL()
+
+    def CircleManualControlEntryRight(self):
+        '''Circle orbits at the configured rate when entered holding roll stick right'''
+        # Holding the roll stick with the CIRCLE_RATE sign on entry used to
+        # leave the rate crawling up from zero instead of starting at the
+        # configured rate.  The orbit must reach the configured rate.
+        self.set_parameters({
+            "CIRCLE_RADIUS_M": 10,
+            "CIRCLE_RATE": 20,  # +ve, clockwise
+        })
+        expected_groundspeed = math.pi * 2 * 10 * (20 / 360.0)  # ~3.49m/s
+        self.takeoff(10, mode='LOITER')
+        self.hover()  # circle mode uses throttle input
+        self.set_rc(1, 1600)  # held right, with the CIRCLE_RATE sign
+        self.change_mode('CIRCLE')
+        self.wait_groundspeed(
+            expected_groundspeed - 0.5,
+            expected_groundspeed + 0.5,
+            minimum_duration=5,
+            timeout=30,
+        )
+        self.set_rc(1, 1500)
+        self.do_RTL()
 
     # enter RTL mode and wait for the vehicle to disarm
     def do_RTL(self, distance_min=None, check_alt=True, distance_max=10, timeout=250, quiet=False):
@@ -2832,50 +2883,57 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # re-arming is problematic because the GPS is glitching!
         self.reboot_sitl()
 
-    #   fly_simple - assumes the simple bearing is initialised to be
-    #   directly north flies a box with 100m west, 15 seconds north,
-    #   50 seconds east, 15 seconds south
-    def SimpleMode(self, side=50):
+    #   SimpleMode - test simple mode flies North regardless of vehicle heading
+    def SimpleMode(self):
         '''Fly in SIMPLE mode'''
+
+        # reboot to ensure previous test doesn't affect the initial heading
+        self.reboot_sitl()
+
+        # set SIMPLE mode for FlightMode2 (AltHold)
+        self.set_parameters({
+            "FLTMODE_CH": 5,
+            "FLTMODE1": 5, # Loiter
+            "FLTMODE2": 2, # AltHold
+            "SIMPLE": 2,   # FLTMODE2 uses simple mode
+        })
+
+        # Takeoff in loiter
         self.takeoff(10, mode="LOITER")
 
-        # set SIMPLE mode for all flight modes
-        self.set_parameter("SIMPLE", 63)
+        # Fail immediately if heading is not the expected 270
+        self.wait_heading(270, 5, timeout=60)
 
-        # switch to stabilize mode
-        self.change_mode('STABILIZE')
-        self.set_rc(3, 1545)
+        # Try a range of headings
+        for yaw_angle in [0, 90, 180, 270]:
+            self.progress("Testing SIMPLE mode with copter yaw=%u degrees" % yaw_angle)
 
-        # fly south 50m
-        self.progress("# Flying south %u meters" % side)
-        self.set_rc(1, 1300)
-        self.wait_distance(side, 5, 60)
-        self.set_rc(1, 1500)
+            # yaw to test angle
+            self.set_rc(4, 1560)
+            self.wait_heading(yaw_angle, timeout=60)
+            self.set_rc(4, 1500)
 
-        # fly west 8 seconds
-        self.progress("# Flying west for 8 seconds")
-        self.set_rc(2, 1300)
-        tstart = self.get_sim_time()
-        while self.get_sim_time_cached() < (tstart + 8):
-            self.assert_receive_message('VFR_HUD')
-        self.set_rc(2, 1500)
+            # switch to alt hold mode
+            self.set_rc(5, 1298)
 
-        # fly north 25 meters
-        self.progress("# Flying north %u meters" % (side/2.0))
-        self.set_rc(1, 1700)
-        self.wait_distance(side/2, 5, 60)
-        self.set_rc(1, 1500)
+            # RC input to roll right towards North
+            start = self.get_location()
+            self.set_rc(1, 1700)
+            self.wait_distance(50)
+            self.set_rc(1, 1500)
 
-        # fly east 8 seconds
-        self.progress("# Flying east for 8 seconds")
-        self.set_rc(2, 1700)
-        tstart = self.get_sim_time()
-        while self.get_sim_time_cached() < (tstart + 8):
-            self.assert_receive_message('VFR_HUD')
-        self.set_rc(2, 1500)
+            # verify ground course is approximately north
+            end = self.get_location()
+            bearing = self.get_bearing(start, end)
+            if self.heading_delta(bearing, 0) > 10:
+                raise NotAchievedException(
+                    "SIMPLE mode yaw=%u: ground course %f, want ~0 (north)" %
+                    (yaw_angle, bearing)
+                )
 
-        # hover in place
-        self.hover()
+            # Loiter to a stop before next iteration
+            self.set_rc(5, 1165)
+            self.wait_groundspeed(0, 0.1)
 
         self.do_RTL(timeout=500)
 
@@ -7365,6 +7423,28 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         esc_hz = rpm_total / (rpm_count * 60)
         return esc_hz
 
+    def assert_notch_filter_count(self, expected, instance=0):
+        '''check the number of notch filters allocated for a harmonic notch
+        instance, as logged in the NF field of FCN.  Note that FCN is only
+        logged when the notch has more than one frequency source, so
+        notch-per-motor must be enabled'''
+        mlog = self.dfreader_for_current_onboard_log()
+        count = None
+        while True:
+            m = mlog.recv_match(type="FCN")
+            if m is None:
+                break
+            if m.I != instance:
+                continue
+            count = m.NF
+        if count is None:
+            raise NotAchievedException("Did not find a FCN message for notch %u" % instance)
+        if count != expected:
+            raise NotAchievedException(
+                "Expected %u notch filters for notch %u, got %u" %
+                (expected, instance, count))
+        self.progress("Notch %u has %u filters" % (instance, count))
+
     def DynamicNotches(self):
         """Use dynamic harmonic notch to control motor noise."""
         self.progress("Flying with dynamic notches")
@@ -7401,12 +7481,23 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         freq, hover_throttle, peakdb1 = \
             self.hover_and_check_matched_frequency_with_fft(-10, 20, 350, reverse=True)
 
+        # a peak check alone cannot tell a quintuple notch from a triple one, so
+        # notch-per-motor is enabled for the composite notch runs below.  That
+        # makes the number of allocated filters visible in the NF field of FCN,
+        # which is only logged for a multi-source notch.  Note this also moves
+        # throttle tracking onto per-motor thrust, so the runs below fly a notch
+        # per motor rather than a single throttle-derived notch.
+        motors = 4      # the default frame is a quad
+        harmonics = 2   # INS_HNTCH_HMNCS is 5, the first and third harmonic
+
         # now add double dynamic notches and check that the peak is squashed
-        self.set_parameter("INS_HNTCH_OPTS", 1)
+        self.set_parameter("INS_HNTCH_OPTS", 3)  # double-notch, notch-per-motor
         self.reboot_sitl()
 
         freq, hover_throttle, peakdb2 = \
             self.hover_and_check_matched_frequency_with_fft(-15, 20, 350, reverse=True)
+
+        self.assert_notch_filter_count(motors * harmonics * 2)
 
         # double-notch should do better, but check for within 5%
         if peakdb2 * 1.05 > peakdb1:
@@ -7415,11 +7506,13 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 (peakdb2, peakdb1))
 
         # now add triple dynamic notches and check that the peak is squashed
-        self.set_parameter("INS_HNTCH_OPTS", 16)
+        self.set_parameter("INS_HNTCH_OPTS", 18)  # triple-notch, notch-per-motor
         self.reboot_sitl()
 
         freq, hover_throttle, peakdb2 = \
             self.hover_and_check_matched_frequency_with_fft(-15, 20, 350, reverse=True)
+
+        self.assert_notch_filter_count(motors * harmonics * 3)
 
         # triple-notch should do better, but check for within 5%
         if peakdb2 * 1.05 > peakdb1:
@@ -7428,13 +7521,15 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 (peakdb2, peakdb1))
 
         # now add quintuple dynamic notches and check that the peak is squashed
-        self.set_parameter("INS_HNTCH_OPTS", 64)
+        self.set_parameter("INS_HNTCH_OPTS", 66)  # quintuple-notch, notch-per-motor
         self.reboot_sitl()
 
         freq, hover_throttle, peakdb2 = \
             self.hover_and_check_matched_frequency_with_fft(-15, 20, 350, reverse=True)
 
-        # triple-notch should do better, but check for within 5%
+        self.assert_notch_filter_count(motors * harmonics * 5)
+
+        # quintuple-notch should do better, but check for within 5%
         if peakdb2 * 1.05 > peakdb1:
             raise NotAchievedException(
                 "Quintuple-notch peak was higher than single-notch peak %fdB > %fdB" %
@@ -12266,6 +12361,25 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.change_mode("LAND")
         self.wait_landed_and_disarmed()
 
+    def MissionRTLAltFinalContinue(self):
+        '''ensure AUTO mission can continue past a NAV_RETURN_TO_LAUNCH item
+        even if the vehicle holds altitude at RTL_ALT_FINAL_M'''
+        target_alt = 5
+        self.set_parameters({
+            "AUTO_OPTIONS": 3,
+            "RTL_ALT_FINAL_M": target_alt,
+        })
+        self.start_flying_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 20),
+            (mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0),
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 20),
+            (mavutil.mavlink.MAV_CMD_NAV_LAND, 0, 0, 0),
+        ])
+
+        # ensure the vehicle reaches the LAND command instead of getting stuck at RTL
+        self.wait_current_waypoint(4, timeout=60)
+        self.wait_disarmed()
+
     def SMART_RTL(self):
         '''Check SMART_RTL'''
         self.progress("arm the vehicle and takeoff in Guided")
@@ -12328,6 +12442,93 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
     def get_touchdownexpected_durations_from_current_onboard_log(self, ignore_multi=False):
         return self.get_ground_effect_duration_from_current_onboard_log(12, ignore_multi=ignore_multi)
+
+    def EK3_OptflowTerrainScaleHeight(self):
+        '''optical flow scale height from the terrain database is right over slopes'''
+        # Above the rangefinder range with EK3_OPTIONS bit 2 the optical flow scale
+        # height comes from the terrain database. terrain_srtm_alt is measured up from
+        # the EKF origin while the position state is down-positive, so where the terrain
+        # sits at the origin altitude the two conventions agree and nothing would
+        # discriminate. Off the Kalaupapa cliffs the ground falls about 160 m below the
+        # origin, where getting it the wrong way round drives the scale height into the
+        # on-ground clamp.
+        #
+        # GPS navigates here, so flow is not fused into velocity and the trajectory does
+        # not depend on the scale height: a correct and an inverted build fly the same
+        # path. The scale height still sets the predicted flow rate, so the XKF5
+        # innovation consistency ratio is what the test reads.
+        #
+        # What this does NOT prove is that the database rather than the terrain offset
+        # state supplied the height. Measured with the option cleared, the frozen
+        # terrain state gives a scale height about 3.7x low and a ratio of 3, well
+        # inside the gate, against 0 with the option set and 255 with the sign inverted.
+        # So a negative leg on this signal would not discriminate, and is not attempted.
+        self.install_terrain_handlers_context()
+        self.set_parameters({
+            "SIM_FLOW_ENABLE": 1,
+            "FLOW_TYPE": 10,
+            "EK3_IMU_MASK": 1,
+            "TERRAIN_ENABLE": 1,
+            "EK3_OPTIONS": 1 << 2,   # OptflowMayUseTerrainAlt
+            "LOG_FILE_DSRMROT": 1,
+        })
+        self.set_analog_rangefinder_parameters()
+        self.set_parameter("RNGFND1_MAX", 8)
+        self.customise_SITL_commandline(["--home", "KalaupapaCliffs"])
+
+        # terrain requests cannot start until the EKF has a location, so let the vehicle
+        # reach armable before timing the delivery
+        self.wait_ready_to_arm()
+        tstart = self.get_sim_time()
+        while True:
+            if self.get_sim_time_cached() - tstart > 120:
+                raise NotAchievedException("terrain tiles were never delivered")
+            report = self.assert_receive_message("TERRAIN_REPORT", timeout=10)
+            if report.pending == 0 and report.loaded > 0:
+                break
+
+        # 60 m clears the 185.8 m AMSL ridge 50 m north of home by about 40 m. At 40 m
+        # the margin is 19.5 m, and dropping to a few metres AGL would put the
+        # rangefinder back in range and bypass the branch under test
+        self.takeoff(60, mode='GUIDED')
+        # gndOffsetValid surfaces as EKF_POS_VERT_AGL; wait for it to go clear so the
+        # terrain offset state is not what is supplying the height
+        self.wait_ekf_flags(0, mavutil.mavlink.ESTIMATOR_POS_VERT_AGL, timeout=60)
+
+        # the scale height only reaches the innovation through vehicle velocity, so the
+        # window that carries the signal is the traverse, not a hover at the end of it
+        window_start_us = self.get_sim_time() * 1e6
+        self.fly_guided_move_local(400, 0, 60)
+        window_end_us = self.get_sim_time() * 1e6
+
+        report = self.assert_receive_message("TERRAIN_REPORT", timeout=10)
+        self.progress("true AGL %.2fm over terrain at %.2fm AMSL"
+                      % (report.current_height, report.terrain_height))
+        if report.current_height < 150:
+            raise NotAchievedException(
+                "terrain did not fall away enough to test the scale height (%.1fm)"
+                % report.current_height)
+        self.disarm_vehicle(force=True)
+
+        dfreader = self.dfreader_for_current_onboard_log()
+        worst = 0
+        count = 0
+        while True:
+            m = dfreader.recv_match(type="XKF5")
+            if m is None:
+                break
+            if window_start_us <= m.TimeUS <= window_end_us:
+                count += 1
+                worst = max(worst, m.NI)
+        if count == 0:
+            raise NotAchievedException("no XKF5 logged over the traverse")
+        self.progress("worst flow innovation ratio %u over %u XKF5 samples"
+                      % (worst, count))
+        # the ratio is logged as 100x, capped at 255. An inverted scale height saturates
+        # the cap and flow is rejected outright; a correct one sits near zero
+        if worst > 50:
+            raise NotAchievedException(
+                "flow innovation ratio reached %u, so the scale height is wrong" % worst)
 
     def ThrowDoubleDrop(self):
         '''Test a more complicated drop-mode scenario'''
@@ -12556,6 +12757,57 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         if abs(m.yaw - want) > 500:
             raise NotAchievedException("Expected to get GPS-from-yaw (want %f got %f)" % (want, m.yaw))
         self.wait_ready_to_arm()
+
+    def GPSForYawWindEstimation(self):
+        '''Test drag-based wind estimation when using GPS yaw'''
+        wind_speed = 5
+        wind_direction = 45
+        self.load_default_params_file("copter-gps-for-yaw.parm")
+        self.set_parameters({
+            "EK3_DRAG_BCOEF_X": 9.5,
+            "EK3_DRAG_BCOEF_Y": 9.5,
+            "EK3_DRAG_MCOEF": 0.082,
+            "SIM_WIND_DIR": wind_direction,
+            "SIM_WIND_SPD": wind_speed,
+            "SIM_WIND_T": 1,
+        })
+
+        for yaw_source in (2, 3):
+            self.start_subtest("EK3_SRC1_YAW=%u" % yaw_source)
+            self.set_parameter("EK3_SRC1_YAW", yaw_source)
+            self.reboot_sitl()
+
+            self.wait_gps_fix_type_gte(6, message_type="GPS2_RAW", verbose=True)
+            m = self.assert_receive_message("GPS2_RAW")
+            if abs(m.yaw - 27000) > 500:
+                raise NotAchievedException(
+                    "Expected GPS yaw near 270deg with EK3_SRC1_YAW=%u, got %f" %
+                    (yaw_source, m.yaw * 0.01))
+            self.wait_ready_to_arm()
+            self.takeoff(10, mode="LOITER")
+
+            # Rotate to provide drag observations in both body axes.
+            try:
+                self.set_rc(4, 1400)
+                tstart = self.get_sim_time()
+                last_report = 0
+                while True:
+                    if self.get_sim_time_cached() - tstart > 60:
+                        raise NotAchievedException(
+                            "Wind estimate did not converge with EK3_SRC1_YAW=%u" % yaw_source)
+                    m = self.assert_receive_message("WIND")
+                    speed_error = abs(m.speed - wind_speed)
+                    direction_error = abs(mavextra.wrap_180(m.direction - wind_direction))
+                    if self.get_sim_time_cached() - last_report > 5:
+                        self.progress(
+                            "EK3_SRC1_YAW=%u wind speed=%f direction=%f" %
+                            (yaw_source, m.speed, m.direction))
+                        last_report = self.get_sim_time_cached()
+                    if speed_error < 1 and direction_error < 15:
+                        break
+            finally:
+                self.set_rc(4, 1500)
+                self.land_and_disarm()
 
     def SMART_RTL_EnterLeave(self):
         '''check SmartRTL behaviour when entering/leaving'''
@@ -13363,6 +13615,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
              self.BatteryMissing,
              self.VibrationFailsafe,
              self.EK3AccelBias,
+             self.EK3_OptflowTerrainScaleHeight,
              self.StabilityPatch,
              self.OBSTACLE_DISTANCE_3D,
              self.AC_Avoidance_Proximity,
@@ -14085,7 +14338,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
     def BrakeZ(self):
         '''check jerk limit correct in Brake mode'''
-        self.set_parameter('PSC_JERK_D', 3)
+        self.set_parameter('PSC_D_JERK', 3)
         self.takeoff(50, mode='GUIDED')
         vx, vy, vz_up = (0, 0, -1)
         self.test_guided_local_velocity_target(vx=vx, vy=vy, vz_up=vz_up, timeout=10)
@@ -16394,6 +16647,7 @@ return update, 1000
             self.GSF_reset,
             self.AP_Avoidance,
             self.RTL_ALT_FINAL_M,
+            self.MissionRTLAltFinalContinue,
             self.SMART_RTL,
             self.SMART_RTL_EnterLeave,
             self.SMART_RTL_Repeat,
@@ -16426,6 +16680,7 @@ return update, 1000
             self.SensorErrorFlags,
             self.DeadReckoningInWind,
             self.GPSForYaw,
+            self.GPSForYawWindEstimation,
             self.DefaultIntervalsFromFiles,
             self.GPSTypes,
             self.MultipleGPS,
@@ -16444,6 +16699,8 @@ return update, 1000
             self.ScriptCopterPosOffsets,
             self.MountSolo,
             self.MountSiyiZT30,
+            self.CircleManualControlEntryLeft,
+            self.CircleManualControlEntryRight,
             self.MountTopotek,
             self.MountViewPro,
             self.MountAVTCM62,

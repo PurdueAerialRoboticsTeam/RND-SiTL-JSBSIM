@@ -112,7 +112,7 @@ The Rascal has no flaps and its tailwheel is a free caster (`max_steer`
 | `in` | Normalised input range, two numbers. Also selects the PWM conversion, below. | `0 1` |
 | `out` | Range written to the property. | `0 1` |
 | `invert` | `1` mirrors the value inside `in`: `x' = in_min + in_max - x` (−x for `-1 1`, 1−x for `0 1`). | `0` |
-| `lag` | **Our extension** (PteroSim files do not use it). Servo time in seconds per 60°, the same meaning and model as SITL's `SIM_SERVO_SPEED` (`libraries/SITL/ServoModel.cpp`). `0` = no lag. | `0` |
+| `lag` | **Our extension** (PteroSim files do not use it). Time constant in seconds of a first-order lag: the model SITL applies with `SIM_SERVO_SPEED` when `SIM_SERVO_DELAY` and `SIM_SERVO_FILTER` are 0 (`ServoModel::apply_simple_filter`), so `0.14` matches SITL's default. `0` = no lag. | `0` |
 | `label` | Free text for logs. | |
 
 ### PWM → property, per row
@@ -125,8 +125,8 @@ The Rascal has no flaps and its tailwheel is a free caster (`max_steer`
    - `in_min < 0`:  `x = (pwm - 1500) / 500`
 3. Clamp `x` to `in`, apply `invert`.
 4. Linear map `in → out`: `y = out_min + (x - in_min) * (out_max - out_min) / (in_max - in_min)`.
-5. If `lag > 0`, move the row's output towards `y` with the `ServoModel`
-   filter over this frame's `dt`.
+5. If `lag > 0`, filter `y` with that first-order lag over this frame's
+   `dt`.
 6. Write `fdm[property] = y`.
 
 Fan-out is allowed: one channel may feed several rows (c172p drives rudder and

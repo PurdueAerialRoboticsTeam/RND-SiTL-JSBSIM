@@ -15,8 +15,8 @@ ARG DEBIAN_FRONTEND=noninteractive
 # ArduPilot is NOT in the image. Its source is this git repository, which is
 # bind-mounted at /opt/ardupilot and compiled by entrypoint.sh at startup.
 ARG JSBSIM_REPO=https://github.com/JSBSim-Team/jsbsim.git
-# Pin to a tag (e.g. v1.2.2) if you want byte-reproducible builds.
-ARG JSBSIM_REF=master
+# Pinned to a release tag so every computer builds the same JSBSim.
+ARG JSBSIM_REF=v1.3.3
 # Set to "-march=native -mtune=native" ONLY if the image will never leave this
 # machine. Leave empty for a portable image.
 ARG NATIVE_FLAGS=""

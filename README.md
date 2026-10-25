@@ -1,6 +1,6 @@
 # ArduPilot Project
 
-> **Team SITL setup:** this is a private copy of ArduPilot Plane-4.7.0 with a Docker
+> **Team SITL setup:** this is a private copy of ArduPilot Plane-4.7.2 with a Docker
 > JSBSim simulator. Start with [sitl-docker/README.md](sitl-docker/README.md), or jump
 > straight to the quick setup for [macOS](sitl-docker/SETUP-MACOS.md) or
 > [Windows](sitl-docker/SETUP-WINDOWS.md).

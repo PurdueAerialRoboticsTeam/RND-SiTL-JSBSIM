@@ -1,6 +1,7 @@
 # Team ArduPilot SITL + JSBSim
 
-This repository is ArduPilot (imported from `Plane-4.7.0`) plus a Docker setup
+This repository is ArduPilot (`Plane-4.7.2`, plus upstream commit `e5e9709`
+fixing JSON rangefinder input) plus a Docker setup
 that runs ArduPlane SITL with the JSBSim flight model. Everyone clones the same
 repository, so everyone flies the same source and the same aircraft files.
 
@@ -137,9 +138,13 @@ The repository does not carry ArduPilot's history. To move to a newer release,
 apply the upstream changes between the two tags as one commit:
 
 ```bash
-git fetch --depth 1 https://github.com/ArduPilot/ardupilot.git tag Plane-4.7.0 tag Plane-4.7.1
-git diff Plane-4.7.0 Plane-4.7.1 | git apply --3way
+git fetch --depth 1 https://github.com/ArduPilot/ardupilot.git tag Plane-4.7.2 tag Plane-4.7.3
+git diff --binary Plane-4.7.2 Plane-4.7.3 -- . ':(exclude).github/workflows' ':(exclude)modules' \
+  | git apply --3way --index
+git diff Plane-4.7.2 Plane-4.7.3 -- modules   # submodule pins that moved
 ```
 
-Resolve any conflicts with the team's edits, update submodules to the new
-release's commits, then commit.
+The upstream CI workflows are excluded because this repository removed them.
+For each submodule the last command lists, set the new pin with
+`git update-index --cacheinfo 160000,<new commit>,modules/<name>`. Resolve any
+conflicts with the team's edits, then commit.

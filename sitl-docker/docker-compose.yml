@@ -3,7 +3,7 @@ services:
     build:
       context: .
       args:
-        JSBSIM_REF: master
+        JSBSIM_REF: v1.3.3
     image: ardupilot-sitl-jsbsim:latest
     container_name: ardupilot-sitl
     init: true

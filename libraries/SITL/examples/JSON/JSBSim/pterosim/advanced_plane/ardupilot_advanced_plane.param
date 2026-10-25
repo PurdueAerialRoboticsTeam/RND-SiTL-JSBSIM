@@ -1,0 +1,13 @@
+# ArduPlane parameters for PteroSimAircrafts' advanced_plane, layered over Tools/autotest/models/plane.parm.
+# The JSON airspeed field is only read by the SITL airspeed sensor type.
+ARSPD_TYPE 100
+ARSPD_USE 1
+# 1.18 kg on 0.34 m2 with CLmax 1.15 stalls at about 7 m/s.
+AIRSPEED_MIN 10
+AIRSPEED_CRUISE 14
+AIRSPEED_MAX 22
+# The model's propeller table is flat (no fall-off with advance ratio): full throttle is 21 lbf and
+# runs away past 100 m/s, so throttle is capped.
+THR_MAX 40
+TKOFF_THR_MAX 40
+TRIM_THROTTLE 20

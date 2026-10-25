@@ -490,11 +490,20 @@ There are no flight logs yet, so tune against a range of plausible models,
 not one best guess. The bridge takes model scale factors at startup:
 
 ```bash
-jsbsim_json_bridge.py --aircraft Team --scale aero/roll-power=0.7 --scale mass/ixx=1.2 ...
+jsbsim_json_bridge.py --aircraft Team --variant inertia-hi --scale scale/roll-power=0.7 ...
 ```
 
-Each `--scale` multiplies a property the model exposes for that purpose (the
-modeling plan defines them: control power, damping, inertia, CG offset).
+Two kinds of factor, because JSBSim's inertia properties
+(`inertia/ixx-slugs_ft2` …) are read-only at runtime:
+
+- **Aerodynamic factors** (control power, damping): each `--scale` sets a
+  `scale/…` property (default 1.0) that the model's aero functions multiply
+  by, before `run_ic()`.
+- **Mass, inertia, CG**: generated variant mass files, selected with
+  `--variant`; a CG shift can also move a ballast point mass at runtime
+  (`inertia/pointmass-location-X-inches[n]`).
+
+The modeling plan (`aircraft-modeling` branch) defines both.
 A sweep runner (`sweep.py`) launches SITL plus bridge per variant, flies a
 fixed test sequence, and scores it. The default variant set:
 

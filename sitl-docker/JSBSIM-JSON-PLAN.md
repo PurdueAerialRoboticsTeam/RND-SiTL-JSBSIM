@@ -82,18 +82,24 @@ Decisions:
 
 ## 5. Binding file: `Controls.xml`
 
-Same format as PteroSimAircrafts, read by the bridge only (JSBSim never reads it):
+Same format as PteroSimAircrafts, read by the bridge only (JSBSim never reads
+it). `Tools/autotest/aircraft/Rascal/Controls.xml`:
 
 ```xml
+<!-- ArduPlane defaults: SERVO1 aileron, SERVO2 elevator, SERVO3 throttle, SERVO4 rudder.
+     No invert: plane-jsbsim.parm already sets SERVO2_REVERSED 1 and SERVO4_REVERSED 1,
+     which turn ArduPlane's sign into JSBSim's for elevator and rudder. -->
 <control_bindings stack="ArduPilot">
-  <binding stack="ArduPilot" channel="0" type="Aileron"  in="-1 1" out="-1 1" label="aileron"/>
-  <binding stack="ArduPilot" channel="1" type="Elevator" in="-1 1" out="-1 1" invert="1" label="elevator"/>
+  <binding stack="ArduPilot" channel="0" type="Aileron"  in="-1 1" out="-1 1" lag="0.14" label="aileron"/>
+  <binding stack="ArduPilot" channel="1" type="Elevator" in="-1 1" out="-1 1" lag="0.14" label="elevator"/>
   <binding stack="ArduPilot" channel="2" type="Motor" index="0" in="0 1" out="0 1" label="engine"/>
-  <binding stack="ArduPilot" channel="3" type="Rudder"   in="-1 1" out="-1 1" invert="1" label="rudder"/>
-  <binding stack="ArduPilot" channel="3" property="fcs/steer-cmd-norm" in="-1 1" out="-1 1" label="tailwheel"/>
-  <binding stack="ArduPilot" channel="4" type="Flaps" in="0 1" out="0 1" label="flaps"/>
+  <binding stack="ArduPilot" channel="3" type="Rudder"   in="-1 1" out="-1 1" lag="0.14" label="rudder"/>
 </control_bindings>
 ```
+
+The Rascal has no flaps and its tailwheel is a free caster (`max_steer`
+360°), so neither gets a row. For a model with both, rows look like c172p's
+(`type="Flaps"`, `property="fcs/steer-cmd-norm"`).
 
 ### Attributes
 
@@ -106,6 +112,7 @@ Same format as PteroSimAircrafts, read by the bridge only (JSBSim never reads it
 | `in` | Normalised input range, two numbers. Also selects the PWM conversion, below. | `0 1` |
 | `out` | Range written to the property. | `0 1` |
 | `invert` | `1` mirrors the value inside `in`: `x' = in_min + in_max - x` (−x for `-1 1`, 1−x for `0 1`). | `0` |
+| `lag` | **Our extension** (PteroSim files do not use it). Servo time in seconds per 60°, the same meaning and model as SITL's `SIM_SERVO_SPEED` (`libraries/SITL/ServoModel.cpp`). `0` = no lag. | `0` |
 | `label` | Free text for logs. | |
 
 ### PWM → property, per row
@@ -118,14 +125,79 @@ Same format as PteroSimAircrafts, read by the bridge only (JSBSim never reads it
    - `in_min < 0`:  `x = (pwm - 1500) / 500`
 3. Clamp `x` to `in`, apply `invert`.
 4. Linear map `in → out`: `y = out_min + (x - in_min) * (out_max - out_min) / (in_max - in_min)`.
-5. Write `fdm[property] = y`.
+5. If `lag > 0`, move the row's output towards `y` with the `ServoModel`
+   filter over this frame's `dt`.
+6. Write `fdm[property] = y`.
 
 Fan-out is allowed: one channel may feed several rows (c172p drives rudder and
 nosewheel from channel 3; ingenuity drives two motors from one RSC channel).
 Fan-in is a load error: two rows writing the same property would fight.
 
-SERVOn_MIN/MAX/TRIM/REVERSED stay ArduPilot's job, exactly as on a real
-aircraft. The bindings only describe the airframe.
+### From ArduPilot parameters to JSBSim
+
+The bridge receives PWM, never parameters. ArduPilot's servo parameters turn
+demands into PWM; `Controls.xml` turns PWM into JSBSim properties. The two are
+joined only by the channel number (`channel = SERVOn - 1`), so each aircraft
+folder keeps both: `Controls.xml` and the ArduPilot parameter file it was
+written against (PteroSim keeps `firmwares/ardupilot_<model>.param` beside
+`Controls.xml` for the same reason).
+
+| Concern | Owned by |
+|---|---|
+| Which function is on which output | `SERVOn_FUNCTION` |
+| End points, centre, direction on the autopilot side | `SERVOn_MIN`, `SERVOn_MAX`, `SERVOn_TRIM`, `SERVOn_REVERSED` |
+| Which JSBSim input an output drives, and its range | `Controls.xml`: `channel`, `type`/`property`, `in`/`out` |
+| ArduPilot and JSBSim disagreeing on a sign | `SERVOn_REVERSED` **or** `invert`, never both (both = reversed twice) |
+| Servo speed | `lag` on the row (SITL's `SIM_SERVO_SPEED` does not reach a JSON backend), or an `<actuator>` with `<rate_limit>` in the model's FCS, not both |
+| Degrees of throw, mixing inside the model | The aircraft's JSBSim XML |
+
+Rules that follow from the fixed PWM scale in step 2:
+
+- **End points.** Full scale is PWM 1000..2000. If an aircraft's
+  `SERVOn_MIN/MAX` are narrower, say 1100..1900, the surface never reaches
+  full throw unless the row's `in` is narrowed to match: `in="-0.8 0.8"` for
+  a servo, `in="0.1 0.9"` for a motor (PteroSim's `quiver` does this for
+  1050..1950 with `in="0.05 0.95"`).
+- **Trim.** −1..1 rows are centred on 1500. A `SERVOn_TRIM` other than 1500
+  arrives as a standing offset (PteroSim's `explora` notes 1552 →
+  +0.10), so either keep trims at 1500 in the sim parameter file or accept the
+  offset as the real linkage's.
+- **Direction.** Pick one place per surface. Today's `plane-jsbsim.parm`
+  reverses elevator and rudder with `SERVO2_REVERSED` / `SERVO4_REVERSED`, so
+  any `Controls.xml` used with it must not also `invert` them. PteroSim files
+  written for their own parameter files (c172p) invert in `Controls.xml`
+  instead; use them with their parameter file, not with `plane-jsbsim.parm`.
+
+### Parameter-file cross-check
+
+`Controls.xml` may name its parameter file:
+
+```xml
+<control_bindings stack="ArduPilot" params="firmwares/ardupilot_rascal.param">
+```
+
+Default: `Tools/autotest/default_params/plane-jsbsim.parm` plus
+`plane-jsbsim-json.parm` (what the `jsbsim-json` frame loads), with
+ArduPlane's default functions for SERVO1..4 (aileron, elevator, throttle,
+rudder) where the files do not set them. At startup the bridge reads it (plain
+`NAME value` lines, `#` comments) and prints a table, one line per channel:
+`SERVOn`, `FUNCTION`, `MIN/MAX/TRIM/REVERSED`, and the rows bound to it. It
+warns, without stopping, when:
+
+- a bound channel has `SERVOn_FUNCTION` 0 (disabled) or unset with no
+  ArduPlane default: the property will never move;
+- a channel has a non-zero function but no row: ArduPilot drives an output the
+  model ignores;
+- `SERVOn_REVERSED 1` and the row has `invert="1"`: reversed twice;
+- `SERVOn_MIN/MAX` differ from 1000/2000 while `in` is full scale, or
+  `SERVOn_TRIM` is not 1500 on a −1..1 row: the end-point and trim rules above;
+- a `type` and a function disagree in an obvious way, using a small table
+  (`Aileron`↔4, `Elevator`↔19, `Rudder`↔21, `Motor`↔70 or 33..40 or 73/74,
+  `Flaps`↔2/3, `Steering`↔26 …), so `Flaps` on a throttle output is flagged.
+
+The parameter file is what the sim *starts* with; a parameter changed later
+from the GCS is not seen. Phase 4 can add `--mavlink` to fetch the live
+`SERVOn_*` values from SITL (read only) and re-run the same checks.
 
 ### Load-time validation (fail fast, print the row)
 
@@ -136,6 +208,7 @@ aircraft. The bindings only describe the airframe.
   new, unused property and the surface would silently never move
 - two rows writing one property
 - print a table of active rows at startup: channel → property, range, label
+- then run the parameter-file cross-check above (warnings only)
 
 When an aircraft has no `Controls.xml`, the bridge falls back to a built-in
 table equal to today's `jsbsim` backend (SERVO1..4 → aileron, elevator,
@@ -377,10 +450,16 @@ Each phase ends with something that runs.
    takes off in FBWA and flies an AUTO circuit at CMAC on `--frame
    jsbsim-json`, both natively and in Docker.
 2. **`Controls.xml` support.** `controls.py`, the full type table (§6),
-   validation, startup table, `Motor` auto-start. `Rascal/Controls.xml`
-   reproducing the default behaviour. pytest for: PWM 0 skip, both
-   normalisations, invert on both ranges, in→out map, clamping, fan-out,
-   fan-in error, unknown property error, stack filtering.
+   validation, startup table, `Motor` auto-start, `lag`, and the
+   parameter-file cross-check. `Rascal/Controls.xml` reproducing the default
+   behaviour (no `invert`, `lag="0.14"` on surfaces, as `SIM_SERVO_SPEED`
+   gives today's backend). pytest for: PWM 0 skip, both normalisations,
+   invert on both ranges, in→out map, clamping, `lag` against
+   `ServoModel`'s numbers, fan-out, fan-in error, unknown property error,
+   stack filtering, and each cross-check warning (disabled function, unbound
+   function, double reversal, narrow end points, off-centre trim, type vs
+   function). Check by flying: a step on each stick moves the matching
+   surface the right way (JSBSim `fcs/*-pos-deg`).
 3. **Prove all 16 channels.** A test aircraft config (Rascal plus
    `fcs/test-ch-N` properties declared in a small `<system>`), bind channels
    0..15, set `SERVOn_FUNCTION` to RCIN passthrough (51..66), sweep each RC
@@ -389,7 +468,8 @@ Each phase ends with something that runs.
    `explora` (ArduPlane tailsitter, channels 4, 5, 8, 9, param file in
    `firmwares/ardupilot_explora.param`) or `c172p` (flaps on channel 4).
 4. **Environment.** Wind and turbulence from bridge options; rangefinder;
-   battery fields from configured properties.
+   battery fields from configured properties; optional `--mavlink` live
+   `SERVOn_*` cross-check.
 5. **Docker integration and docs.** Dockerfile pip install, entrypoint
    `SIM_BACKEND`, compose variables, smoke test for both backends, readme and
    a section in `sitl-docker/README.md`.
@@ -403,6 +483,8 @@ Each phase ends with something that runs.
 | IMU at `EYEPOINT` instead of CG/autopilot location gives lever-arm accelerations | Document it; set `EYEPOINT` to the autopilot position in each model. |
 | PteroSim aircraft licences (GPL, LGPL, CERN-OHL-S, NASA media terms) | Copy an aircraft only with its `LICENSE` and `NOTICE`, and record the source commit. Copying is not part of this plan. |
 | Gimbal / Gripper rows in PteroSim files have no JSBSim property | Ignored with a warning unless the row also has `property=`. |
+| `Controls.xml` and the parameter file drift apart (a function moved to another SERVOn, a reversal added in both places) | Parameter-file cross-check at startup (§5); live check over MAVLink in Phase 4. |
+| A PteroSim aircraft flown with `plane-jsbsim.parm` instead of its own parameter file | Its rows assume its own reversals; the cross-check flags double reversals. Load its `firmwares/ardupilot_*.param` with it. |
 | Home altitude mismatch (JSBSim ground vs ArduPilot home) | Set `ic/terrain-elevation-ft` from `--home`; Phase 1 checks that AGL on the ground is the gear height. |
 
 ## 13. Out of scope

@@ -299,7 +299,7 @@ Handled by the bridge, not by bindings:
 | Initial conditions (`<initialize>`: lat, lon, altitude, heading, speed) | Bridge `--home lat,lon,alt,hdg` (the entrypoint resolves `LOCATION` from `Tools/autotest/locations.txt`). Written to `ic/…` before `run_ic()`. `ic/terrain-elevation-ft` is set to the home altitude so JSBSim's ground is where ArduPilot expects it. |
 | Ground trim (`simulation/do_simple_trim`) | Set to `2` once after start, as the current backend's script does. |
 | Wind and turbulence (`atmosphere/psiw-rad`, `atmosphere/wind-mag-fps`, `atmosphere/turbulence/milspec/*`) | The JSON servo packet carries no wind, so `SIM_WIND_*` does not reach the bridge. Phase 4: `--wind dir,speed,turb` on the bridge; later, optionally read `SIM_WIND_*` over MAVLink. |
-| JSBSim's own `<input>` sockets (`type="SOCKET"` text console; `type="QTJSBSIM"` UDP comma-separated property list) | Not used. The bridge sets properties in-process. Noted because a C++ fallback (§12) could use the UDP form. |
+| JSBSim's own `<input>` sockets (`type="SOCKET"` text console; `type="QTJSBSIM"` UDP comma-separated property list) | Not used. The bridge sets properties in-process. Noted because a C++ fallback (§13) could use the UDP form. |
 
 ## 7. State sent back to ArduPilot (JSON fields)
 
@@ -379,7 +379,7 @@ Rules that keep it deterministic:
   `SIM_RATE_HZ 1200` (833 µs per frame); Phase 1 measures the bridge's time
   per frame. If it is too slow, `plane-jsbsim-json.parm` sets
   `SIM_RATE_HZ 400` (ArduPlane's main loop runs at 50 Hz, 300 Hz with
-  QuadPlane enabled, so 400 stays above both), and §12 applies if even that
+  QuadPlane enabled, so 400 stays above both), and §13 applies if even that
   does not fit.
 
 ### Lockstep tests (Phase 1)
@@ -440,7 +440,124 @@ for (uint8_t i=0; i<6; i++) {
 }
 ```
 
-## 11. Phases
+## 11. Tuning with the simulator
+
+Goal: a **safe first-flight tune** for the team aircraft before it is built,
+then field tuning, then a model corrected from flight logs that predicts the
+tune at airspeeds not yet flown. Building the aircraft model itself (XFLR5 →
+JSBSim) has its own plan on the `aircraft-modeling` branch
+(`sitl-docker/AIRCRAFT-MODELING-PLAN.md`); this section covers what the
+bridge and SITL add for tuning.
+
+Lockstep (§8) is what makes this work: a run depends only on its inputs, so
+two tunes can be compared on identical manoeuvres, and batches can run
+unattended. The bridge's speed only changes how long a batch takes.
+
+### 11.1 What the sim can and cannot set
+
+| Set from the sim | Set conservatively in the sim, finish in the field | Not from the sim |
+|---|---|---|
+| Servo directions and throws (cross-check, §5) | `RLL_RATE_P/I`, `PTCH_RATE_P/I`: low end of what is stable across all model variants (11.3) | Final rate P/I/D |
+| Stall speed → `AIRSPEED_MIN`, `AIRSPEED_CRUISE`, `AIRSPEED_MAX` with margin | `*_RATE_D`: 0 or near it (the sim has no structural modes and little noise, so it accepts far more D than the aircraft will) | Filter settings (`INS_GYRO_FILTER`, notches) |
+| `TRIM_THROTTLE`, elevator trim implied by the CG | `RLL2SRV_TCONST`, `PTCH2SRV_TCONST`: relaxed (slower) | How much margin is enough for a first flight: a human decision, with ArduPilot's first-flight guidance |
+| `RLL_RATE_FF`, `PTCH_RATE_FF` ballpark | TECS gains | |
+| Pitch and roll limits, `THR_MAX`, takeoff and landing parameters | | |
+| Failsafe rehearsal | | |
+
+Field procedure after the sim tune is ArduPilot's normal one: first flight
+in a stabilised mode (FBWA), check trim and directions, then AUTOTUNE in the
+air. The sim's job is that the first AUTOTUNE starts from a safe place.
+AUTOTUNE also runs in SITL, which rehearses the procedure, but its result is
+the model's tune, not the aircraft's.
+
+### 11.2 Making the sim honest for tuning
+
+The sim is optimistic in predictable ways. Each item below narrows the gap:
+
+| Gap | Fix |
+|---|---|
+| Timestep and transport delay | One frame of delay per step: 0.8 ms at `SIM_RATE_HZ 1200`, 2.5 ms at 400. Keep 1200 for tuning runs if the bridge can (§8). |
+| Servo dynamics | `lag` per row (§5) for speed. For backlash, deadband and bandwidth, a JSBSim `<actuator>` in the model's FCS (`<lag>`, `<rate_limit>`, `<hysteresis_width>`, `<deadband_width>`), not both. Values from servo datasheets, then measured on the built aircraft. |
+| Motor / ESC response | JSBSim's electric engine responds almost instantly. Add a first-order lag on the throttle in the model's FCS, time constant from a thrust-stand step test. |
+| IMU noise | SITL's own noise still applies with the JSON backend because it keys off the throttle output (`AP_HAL_SITL/SITL_State.cpp`): `SIM_GYR1_RND`, `SIM_ACC1_RND`, and `SIM_VIB_FREQ_X/Y/Z` for a fixed vibration frequency. Set from the real aircraft's logs once it flies (`VIBE`, batch sampler). |
+| Motor-RPM vibration (`SIM_VIB_MOT_MAX`) | Needs per-motor RPM, which SIM_JSON does not accept. Add an `rpm` array to the JSON keytable (check upstream first) and send `propulsion/engine[n]/propeller-rpm` from the bridge. |
+| Real recorded noise | `SIM_GYR_FILE_RW` / `SIM_ACC_FILE_RW` **replace** the simulated IMU with the file (`AP_InertialSensor_SITL.cpp`), so they are for open-loop filter tests, not closed-loop tuning. For closed loop, the bridge adds recorded noise to `imu.gyro` / `imu.accel_body` instead: `--imu-noise <file>` from the real aircraft's batch-sampler log (`INS_LOG_BAT_*`), taken at the matching throttle. |
+| Airframe flex, flutter, servo stall under load | Not modelled. Expand the envelope in the field in steps. |
+
+### 11.3 Before the first flight: robustness sweep
+
+There are no flight logs yet, so tune against a range of plausible models,
+not one best guess. The bridge takes model scale factors at startup:
+
+```bash
+jsbsim_json_bridge.py --aircraft Team --scale aero/roll-power=0.7 --scale mass/ixx=1.2 ...
+```
+
+Each `--scale` multiplies a property the model exposes for that purpose (the
+modeling plan defines them: control power, damping, inertia, CG offset).
+A sweep runner (`sweep.py`) launches SITL plus bridge per variant, flies a
+fixed test sequence, and scores it. The default variant set:
+
+| Factor | Range |
+|---|---|
+| Control power (roll, pitch, yaw) | ×0.7, ×1.0, ×1.3 |
+| Damping (`Clp`, `Cmq`, `Cnr`) | ×0.7, ×1.0, ×1.3 |
+| Inertia (`ixx`, `iyy`, `izz`) | ×0.8, ×1.0, ×1.2 |
+| CG | forward limit, nominal, aft limit |
+| Servo `lag` | ×1, ×2 |
+| IMU noise | off, on |
+
+Full factorial is too many runs; use the corners that matter (low control
+power with high inertia, aft CG with low damping, …) plus a small random
+sample. Gains are accepted only if every variant passes.
+
+Test sequence (scripted over MAVLink with pymavlink, in FBWA and AUTO):
+roll and pitch steps at three airspeeds, a 60° bank turn each way, a climb
+and descent at `THR_MAX`, an AUTO circuit, a landing. Pass criteria per run:
+no sustained oscillation (rate error power above a threshold after a step),
+overshoot and settling time within limits, no servo or throttle saturation
+for longer than a set time, airspeed never below `AIRSPEED_MIN`, TECS height
+error within limits.
+
+### 11.4 After the first flights: log replay and model correction
+
+1. **Parameters.** Extract the `PARM` messages from the dataflash log to a
+   `.param` file (`mavparms.py flight3.bin > flight3.param`, from pymavlink's
+   tools). Check the output loads as a param file; trim non-parameter lines if
+   needed. SITL loads it
+   with `--add-param-file`, and the bridge's cross-check (§5) reads the same
+   file, so the sim flies exactly what the aircraft flew.
+2. **Open-loop replay.** New bridge mode: `--replay log.bin` drives JSBSim
+   from the log's `RCOU` (C1..C14) and `RCO2` (C15, C16) PWM through the same
+   `Controls.xml`, starting from the logged state, with no SITL in the loop.
+   Output: logged vs simulated roll/pitch/yaw rate, attitude, airspeed and
+   accelerations, per segment, as CSV and plots. Short segments (a few
+   seconds around each step) avoid drift dominating the comparison.
+3. **Correct the model.** Adjust the scale factors from 11.3 (control power,
+   damping, inertia) until the simulated steps match the logged ones. Start
+   by hand; a least-squares fit over the scale factors (`fit.py`, scipy) is
+   a later step. Record the corrected factors in the aircraft folder; the
+   modeling plan says where.
+4. **Closed-loop check.** Fly the logged mission in SITL with the extracted
+   parameters and compare with the log again.
+
+### 11.5 Predicting the tune at higher airspeeds
+
+With a model corrected at the speeds already flown, fly the **same**
+parameters in SITL at higher airspeeds before flying them for real:
+`sweep.py --params flight3.param --airspeeds 18,22,26,30` runs the 11.3 test
+sequence at each speed and reports where the pass criteria first fail.
+
+Why it matters: control power grows with dynamic pressure (∝ V²) while
+ArduPlane scales surface output by about `SCALING_SPEED` / airspeed (∝ 1/V),
+so loop gain still rises roughly with airspeed. A model corrected at low speed
+predicts this trend well, because it is the physics the model is built from.
+It does not predict flex, flutter, servo stall under load, propeller data
+beyond what was flown, or aerodynamics outside the flown range. Use the
+prediction to choose the next speed step and gains for it; expand the
+envelope in the field in those steps, logging and correcting at each.
+
+## 12. Phases
 
 Each phase ends with something that runs.
 
@@ -470,11 +587,18 @@ Each phase ends with something that runs.
 4. **Environment.** Wind and turbulence from bridge options; rangefinder;
    battery fields from configured properties; optional `--mavlink` live
    `SERVOn_*` cross-check.
-5. **Docker integration and docs.** Dockerfile pip install, entrypoint
-   `SIM_BACKEND`, compose variables, smoke test for both backends, readme and
-   a section in `sitl-docker/README.md`.
+5. **Docker integration and docs.** JSBSim Python module built in the
+   Dockerfile, entrypoint `SIM_BACKEND`, compose variables, smoke test for
+   both backends, readme and a section in `sitl-docker/README.md`.
+6. **Tuning tools (§11).** `--scale` model factors, `sweep.py` with the
+   scripted test sequence and pass criteria, `--replay` log mode with
+   comparison output, parameter extraction from logs, `--imu-noise`, `rpm`
+   in the JSON state. Done when a robustness sweep on the team model runs
+   unattended and a replay of a SITL-recorded log reproduces it (the model
+   replaying its own flight must match closely; that proves the replay path
+   before real logs exist).
 
-## 12. Risks
+## 13. Risks
 
 | Risk | Mitigation |
 |---|---|
@@ -486,8 +610,10 @@ Each phase ends with something that runs.
 | `Controls.xml` and the parameter file drift apart (a function moved to another SERVOn, a reversal added in both places) | Parameter-file cross-check at startup (§5); live check over MAVLink in Phase 4. |
 | A PteroSim aircraft flown with `plane-jsbsim.parm` instead of its own parameter file | Its rows assume its own reversals; the cross-check flags double reversals. Load its `firmwares/ardupilot_*.param` with it. |
 | Home altitude mismatch (JSBSim ground vs ArduPilot home) | Set `ic/terrain-elevation-ft` from `--home`; Phase 1 checks that AGL on the ground is the gear height. |
+| Sim-derived gains trusted too far | §11.1 limits what is taken from the sim; D and filters are set in the field; the robustness sweep (§11.3) covers model uncertainty; first-flight margins are a human decision. |
+| Model corrected at low speed extrapolated beyond its validity | §11.5: predictions choose the next envelope step, they do not replace flying it. |
 
-## 13. Out of scope
+## 14. Out of scope
 
 - Changing or removing the existing `jsbsim` C++ backend.
 - Copying PteroSimAircrafts models into this repository.

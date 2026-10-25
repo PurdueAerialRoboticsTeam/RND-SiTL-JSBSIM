@@ -71,7 +71,7 @@ Decisions:
 | `libraries/SITL/examples/JSON/JSBSim/controls.py` | new | Parses `Controls.xml`, validates rows, applies PWM to properties. No JSBSim import, so it can be unit tested alone. |
 | `libraries/SITL/examples/JSON/JSBSim/readme.md` | new | How to run it, binding format, troubleshooting. |
 | `libraries/SITL/examples/JSON/JSBSim/tests/test_controls.py` | new | pytest for the binding maths and parser. |
-| `Tools/autotest/aircraft/Rascal/Controls.xml` | new | Rascal bindings matching ArduPlane's default SERVO1..4. |
+| `libraries/SITL/examples/JSON/JSBSim/pterosim/` | new | ArduPilot bindings and parameters for PteroSimAircrafts models that ship without them (`advanced_plane`). |
 | `Tools/autotest/default_params/plane-jsbsim-json.parm` | new | Overrides on top of `plane-jsbsim.parm` for the JSON frame. |
 | `Tools/autotest/pysim/vehicleinfo.py` | changed | New ArduPlane frame `jsbsim-json` with `"model": "JSON:127.0.0.1"`. The exact-match lookup in `options_for_frame()` runs before the `startswith("jsbsim")` fallback, so it does not collide with `jsbsim`. |
 | `sitl-docker/Dockerfile` | changed | Build JSBSim's Python module from the same pinned source (`JSBSIM_REF=v1.3.3`, `-DBUILD_PYTHON_MODULE=ON`, install into `/opt/venv`). Not `pip install jsbsim`: PyPI 1.3.3 has no Linux aarch64 wheel, which is what Docker runs on Apple Silicon. |
@@ -83,23 +83,38 @@ Decisions:
 ## 5. Binding file: `Controls.xml`
 
 Same format as PteroSimAircrafts, read by the bridge only (JSBSim never reads
-it). `Tools/autotest/aircraft/Rascal/Controls.xml`:
+it). The ArduPilot rows of PteroSimAircrafts' `c172p`:
 
 ```xml
-<!-- ArduPlane defaults: SERVO1 aileron, SERVO2 elevator, SERVO3 throttle, SERVO4 rudder.
-     No invert: plane-jsbsim.parm already sets SERVO2_REVERSED 1 and SERVO4_REVERSED 1,
-     which turn ArduPlane's sign into JSBSim's for elevator and rudder. -->
-<control_bindings stack="ArduPilot">
-  <binding stack="ArduPilot" channel="0" type="Aileron"  in="-1 1" out="-1 1" lag="0.14" label="aileron"/>
-  <binding stack="ArduPilot" channel="1" type="Elevator" in="-1 1" out="-1 1" lag="0.14" label="elevator"/>
-  <binding stack="ArduPilot" channel="2" type="Motor" index="0" in="0 1" out="0 1" label="engine"/>
-  <binding stack="ArduPilot" channel="3" type="Rudder"   in="-1 1" out="-1 1" lag="0.14" label="rudder"/>
+<control_bindings stack="PX4" pilot="direct">
+  <binding stack="ArduPilot" channel="0" type="Aileron" in="-1 1" out="-1 1" label="aileron"/>
+  <binding stack="ArduPilot" channel="1" type="Elevator" in="-1 1" out="-1 1" label="elevator"/>
+  <binding stack="ArduPilot" channel="2" type="Motor" index="0" in="0 1" out="0 1" label="io320"/>
+  <binding stack="ArduPilot" channel="3" type="Rudder" in="-1 1" out="-1 1" label="rudder"/>
+  <binding stack="ArduPilot" channel="3" property="fcs/steer-cmd-norm" in="-1 1" out="-1 1" invert="1" label="nosewheel"/>
+  <binding stack="ArduPilot" channel="4" type="Flaps" in="0 1" out="0 1" label="flaps"/>
 </control_bindings>
 ```
 
-The Rascal has no flaps and its tailwheel is a free caster (`max_steer`
-360°), so neither gets a row. For a model with both, rows look like c172p's
-(`type="Flaps"`, `property="fcs/steer-cmd-norm"`).
+The Rascal has no `Controls.xml`: the bridge's built-in bindings (SERVO1..4
+on aileron, elevator, throttle, rudder, as the `jsbsim` frame) already match
+`plane-jsbsim.parm`.
+
+### ArduPilot sign convention (typed Elevator and Rudder rows)
+
+PteroSim's c172p notes: ArduPlane's elevator and rudder outputs above 1500 are
+nose up and yaw right, JSBSim's `fcs/elevator-cmd-norm` and
+`fcs/rudder-cmd-norm` +1 are trailing edge down and trailing edge left. A
+channel that carries a typed `Elevator` or `Rudder` row is therefore mirrored
+around 1500 before any row on it reads it; the c172p's nosewheel row, on the
+rudder channel, inverts it back. Consequences:
+
+- PteroSim aircraft are flown with `models/plane.parm` (no
+  `SERVOn_REVERSED`), not `plane-jsbsim.parm`.
+- Property rows (`property=`) are never mirrored; signs are set with
+  `invert`.
+- The parameter-file cross-check below warns when a mirrored channel also has
+  `SERVOn_REVERSED 1`.
 
 ### Attributes
 
@@ -188,7 +203,8 @@ warns, without stopping, when:
   ArduPlane default: the property will never move;
 - a channel has a non-zero function but no row: ArduPilot drives an output the
   model ignores;
-- `SERVOn_REVERSED 1` and the row has `invert="1"`: reversed twice;
+- `SERVOn_REVERSED 1` and the row has `invert="1"`, or the channel is
+  mirrored (typed Elevator/Rudder): reversed twice;
 - `SERVOn_MIN/MAX` differ from 1000/2000 while `in` is full scale, or
   `SERVOn_TRIM` is not 1500 on a −1..1 row: the end-point and trim rules above;
 - a `type` and a function disagree in an obvious way, using a small table
@@ -517,17 +533,21 @@ Each phase ends with something that runs.
    handling. Measure per-frame time at 1200 Hz. Done when ArduPlane arms,
    takes off in FBWA and flies an AUTO circuit at CMAC on `--frame
    jsbsim-json`, both natively and in Docker.
+   *Status: done natively (2026-10-25): the Rascal flies the same circuit as
+   on the C++ backend, at about 60 µs per frame. Docker: see Phase 5.*
 2. **`Controls.xml` support.** `controls.py`, the full type table (§6),
    validation, startup table, `Motor` auto-start, `lag`, and the
-   parameter-file cross-check. `Rascal/Controls.xml` reproducing the default
-   behaviour (no `invert`, `lag="0.14"` on surfaces, as `SIM_SERVO_SPEED`
-   gives today's backend). pytest for: PWM 0 skip, both normalisations,
+   parameter-file cross-check. Built-in bindings reproducing the default
+   behaviour for aircraft without a `Controls.xml` (the Rascal). pytest for: PWM 0 skip, both normalisations,
    invert on both ranges, in→out map, clamping, `lag` against
    `ServoModel`'s numbers, fan-out, fan-in error, unknown property error,
    stack filtering, and each cross-check warning (disabled function, unbound
    function, double reversal, narrow end points, off-centre trim, type vs
    function). Check by flying: a step on each stick moves the matching
    surface the right way (JSBSim `fcs/*-pos-deg`).
+   *Status: done except the parameter-file cross-check. Also `--aircraft-dir`
+   for external aircraft folders, the ArduPilot sign convention (§5) and
+   piston-engine start (mixture, magnetos).*
 3. **Prove all 16 channels.** A test aircraft config (Rascal plus
    `fcs/test-ch-N` properties declared in a small `<system>`), bind channels
    0..15, set `SERVOn_FUNCTION` to RCIN passthrough (51..66), sweep each RC
@@ -535,12 +555,20 @@ Each phase ends with something that runs.
    that needs more than 4 channels with its own `Controls.xml` unmodified:
    `explora` (ArduPlane tailsitter, channels 4, 5, 8, 9, param file in
    `firmwares/ardupilot_explora.param`) or `c172p` (flaps on channel 4).
+   *Status: PteroSimAircrafts' fixed-wing `c172p` (its own bindings and
+   parameters) and `advanced_plane` (bindings and parameters in
+   `pterosim/`) fly AUTO takeoff, a box and RTL; see `pterosim/README.md`.
+   The 16-channel sweep and the VTOL models are not done.*
 4. **Environment.** Wind and turbulence from bridge options; rangefinder;
    battery fields from configured properties; optional `--mavlink` live
    `SERVOn_*` cross-check.
 5. **Docker integration and docs.** JSBSim Python module built in the
    Dockerfile, entrypoint `SIM_BACKEND`, compose variables, smoke test for
    both backends, readme and a section in `sitl-docker/README.md`.
+   *Status: Dockerfile (`pip install jsbsim==<JSBSIM_REF>`, compiled from
+   source on arm64), entrypoint (`SIM_BACKEND`, `JSBSIM_MODEL`,
+   `JSBSIM_AIRCRAFT_DIR`, `JSBSIM_CONTROLS`, `JSON_FRAME`, `PARAM_FILES`,
+   `BRIDGE_ARGS`), compose and README done. Smoke test not yet extended.*
 6. **Tuning tools (§11).** `--scale`, `--variant`, `--set`, `--imu-noise`,
    `rpm` in the JSON state, `--replay` with comparison output, `sweep.py`. Done when a robustness sweep on the team model runs
    unattended and a replay of a SITL-recorded log reproduces it (the model

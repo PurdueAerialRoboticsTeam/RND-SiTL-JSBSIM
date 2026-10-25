@@ -179,6 +179,8 @@ autotest_result_*_junit.xml
 /Tools/autotest/jsbsim_start_*.xml
 /Tools/autotest/jsbsim_fgout_*.xml
 /sitl-docker/work/
+# aircraft from other repositories (e.g. PteroSimAircrafts), cloned here to fly them
+/sitl-docker/aircraft/
 sitl-docker/system-diagram.drawio
 sitl-docker/system-diagram.png
 *.drawio.bkp

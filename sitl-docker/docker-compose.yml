@@ -24,6 +24,18 @@ services:
       USE_MAVPROXY: "0"      # 0 = connect your GCS to tcp://127.0.0.1:5760
       LOG_TO_STDOUT: "1"
 
+      # Physics backend. jsbsim = ArduPilot's C++ JSBSim backend (SERVO1..4
+      # only). json = the JSBSim bridge over SITL's JSON interface: all 16
+      # servo outputs, bound per aircraft by Controls.xml. See README.md.
+      SIM_BACKEND: jsbsim
+      # With SIM_BACKEND=json (paths relative to the repository):
+      # JSBSIM_MODEL: c172p                                   # default: model in FRAME, else Rascal
+      # JSBSIM_AIRCRAFT_DIR: sitl-docker/aircraft/PteroSimAircrafts
+      # JSBSIM_CONTROLS: path/to/Controls.xml                 # default: the model's own
+      # JSON_FRAME: plane                                     # base params: jsbsim-json | plane
+      # PARAM_FILES: a.param,b.param                          # added on top, comma separated
+      # BRIDGE_ARGS: "--pitch 0 --agl 1"                      # initial attitude for nose-wheel aircraft
+
       # 3D view: set to the host running FlightGear. Resolved to an IP by the
       # entrypoint because SITL's --fg option does not do DNS lookups.
       # FGVIEW_HOST: host.docker.internal

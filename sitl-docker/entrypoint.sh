@@ -26,7 +26,8 @@ if [ ! -e "${AP_DIR}/modules/waf/waf-light" ]; then
   exit 1
 fi
 # A Windows checkout made with core.autocrlf=true breaks every script here.
-if grep -q $'\r' "${AP_DIR}/Tools/autotest/sim_vehicle.py" "${AP_DIR}/modules/waf/waf-light" 2>/dev/null; then
+BRIDGE="${AP_DIR}/libraries/SITL/examples/JSON/JSBSim/jsbsim_json_bridge.py"
+if grep -q $'\r' "${AP_DIR}/Tools/autotest/sim_vehicle.py" "${AP_DIR}/modules/waf/waf-light" "${BRIDGE}" 2>/dev/null; then
   echo "FATAL: the repository was checked out with Windows (CRLF) line endings." >&2
   echo "       Clone it again inside WSL, or with: git config --global core.autocrlf false" >&2
   exit 1
@@ -54,6 +55,7 @@ fi
 
 VEHICLE="${VEHICLE:-ArduPlane}"
 FRAME="${FRAME:-jsbsim}"                # jsbsim | jsbsim:Rascal | jsbsim:MyModel
+SIM_BACKEND="${SIM_BACKEND:-jsbsim}"    # jsbsim (C++ backend, 4 channels) | json (bridge, all channels)
 LOCATION="${LOCATION:-CMAC}"            # named entry in Tools/autotest/locations.txt
 CUSTOM_LOCATION="${CUSTOM_LOCATION:-}"  # lat,lng,alt,heading - overrides LOCATION
 SPEEDUP="${SPEEDUP:-1}"
@@ -66,14 +68,34 @@ RUN_DIR="${RUN_DIR:-/home/sitl/work}"
 LOG_TO_STDOUT="${LOG_TO_STDOUT:-1}"
 EXTRA_ARGS="${EXTRA_ARGS:-}"
 
+# --- JSON backend (SIM_BACKEND=json) ---------------------------------------
+# The aircraft defaults to the model named in FRAME (jsbsim:Model), else Rascal.
+JSBSIM_MODEL="${JSBSIM_MODEL:-$([[ "${FRAME}" == *:* ]] && echo "${FRAME#*:}" || echo Rascal)}"
+JSBSIM_AIRCRAFT_DIR="${JSBSIM_AIRCRAFT_DIR:-}"  # folder holding <model>/<model>.xml; default Tools/autotest/aircraft
+JSBSIM_CONTROLS="${JSBSIM_CONTROLS:-}"          # Controls.xml; default the model's own, else SERVO1..4
+JSON_FRAME="${JSON_FRAME:-jsbsim-json}"         # base parameters: jsbsim-json (plane-jsbsim.parm) | plane (models/plane.parm)
+PARAM_FILES="${PARAM_FILES:-}"                  # comma separated parameter files added on top
+BRIDGE_ARGS="${BRIDGE_ARGS:-}"                  # extra bridge options, e.g. --pitch 0 --agl 1
+
 SIM_VEHICLE="${AP_DIR}/Tools/autotest/sim_vehicle.py"
 
 # --- Sanity checks ----------------------------------------------------------
-# The backend calls execlp("JSBSim", ...), so the name must match exactly.
-if ! command -v JSBSim >/dev/null 2>&1; then
-  echo "FATAL: JSBSim binary not found on PATH." >&2
-  exit 1
-fi
+case "${SIM_BACKEND}" in
+  jsbsim)
+    # The backend calls execlp("JSBSim", ...), so the name must match exactly.
+    if ! command -v JSBSim >/dev/null 2>&1; then
+      echo "FATAL: JSBSim binary not found on PATH." >&2
+      exit 1
+    fi ;;
+  json)
+    if ! python3 -c "import jsbsim" 2>/dev/null; then
+      echo "FATAL: JSBSim's Python module is missing. Rebuild the image: docker compose build" >&2
+      exit 1
+    fi ;;
+  *)
+    echo "FATAL: SIM_BACKEND must be jsbsim or json, not '${SIM_BACKEND}'." >&2
+    exit 1 ;;
+esac
 # At runtime the backend writes jsbsim_start_N.xml, jsbsim_fgout_N.xml and
 # aircraft/<model>/reset.xml into the autotest directory.
 if [ ! -w "${AP_DIR}/Tools/autotest" ]; then
@@ -86,12 +108,27 @@ mkdir -p "${RUN_DIR}"
 cd "${RUN_DIR}"
 
 # --- Assemble the command ---------------------------------------------------
+sim_frame="${FRAME}"
+[ "${SIM_BACKEND}" = "json" ] && sim_frame="${JSON_FRAME}"
 args=( "${SIM_VEHICLE}"
        --vehicle "${VEHICLE}"
-       --frame "${FRAME}"
+       --frame "${sim_frame}"
        --instance "${INSTANCE}"
        --speedup "${SPEEDUP}"
        --no-rebuild )
+if [ "${SIM_BACKEND}" = "json" ]; then
+  args+=( --model JSON:127.0.0.1 )
+  IFS=',' read -ra pfiles <<< "${PARAM_FILES}"
+  for f in "${pfiles[@]}"; do
+    [ -z "${f}" ] && continue
+    [[ "${f}" = /* ]] || f="${AP_DIR}/${f}"
+    if [ ! -r "${f}" ]; then
+      echo "FATAL: parameter file ${f} not found." >&2
+      exit 1
+    fi
+    args+=( --add-param-file "${f}" )
+  done
+fi
 
 if [ -n "${CUSTOM_LOCATION}" ]; then
   args+=( --custom-location "${CUSTOM_LOCATION}" )
@@ -132,7 +169,8 @@ cat <<EOF
 --------------------------------------------------------------------
  ArduPilot SITL + JSBSim
    vehicle    : ${VEHICLE}
-   frame      : ${FRAME}
+   backend    : ${SIM_BACKEND}$([ "${SIM_BACKEND}" = "json" ] && echo " (aircraft ${JSBSIM_MODEL}, frame ${sim_frame}${PARAM_FILES:+, params ${PARAM_FILES}})")
+   frame      : ${sim_frame}
    location   : ${CUSTOM_LOCATION:-${LOCATION}}
    speedup    : ${SPEEDUP}x
    run dir    : ${RUN_DIR}
@@ -140,7 +178,7 @@ cat <<EOF
    FlightGear : ${fg_target}
 
  Connect your GCS from the host to:  tcp://127.0.0.1:${base_port}
- JSBSim starts on the first GCS connection, not at boot.
+ $([ "${SIM_BACKEND}" = "json" ] && echo "The JSBSim bridge waits for SITL, which starts on the first GCS connection." || echo "JSBSim starts on the first GCS connection, not at boot.")
 --------------------------------------------------------------------
 EOF
 
@@ -151,6 +189,39 @@ if [ "${LOG_TO_STDOUT}" = "1" ]; then
   SITL_LOG="/tmp/${VEHICLE}.log"
   : > "${SITL_LOG}"
   ( tail -n +1 -F "${SITL_LOG}" 2>/dev/null | sed -u "s/^/[${VEHICLE}] /" ) &
+fi
+
+# --- JSON backend: start the bridge first ----------------------------------
+# It runs in the background next to SITL and stops with the container. SITL
+# sends to 9002 + 10 * instance.
+if [ "${SIM_BACKEND}" = "json" ]; then
+  bridge_args=( --aircraft "${JSBSIM_MODEL}" --port $(( 9002 + INSTANCE * 10 )) )
+  if [ -n "${CUSTOM_LOCATION}" ]; then
+    bridge_args+=( --home "${CUSTOM_LOCATION}" )
+  else
+    bridge_args+=( --location "${LOCATION}" )
+  fi
+  # relative paths are relative to the repository, like PARAM_FILES
+  [ -n "${JSBSIM_AIRCRAFT_DIR}" ] && [[ "${JSBSIM_AIRCRAFT_DIR}" != /* ]] && JSBSIM_AIRCRAFT_DIR="${AP_DIR}/${JSBSIM_AIRCRAFT_DIR}"
+  [ -n "${JSBSIM_CONTROLS}" ] && [[ "${JSBSIM_CONTROLS}" != /* ]] && JSBSIM_CONTROLS="${AP_DIR}/${JSBSIM_CONTROLS}"
+  [ -n "${JSBSIM_AIRCRAFT_DIR}" ] && bridge_args+=( --aircraft-dir "${JSBSIM_AIRCRAFT_DIR}" )
+  [ -n "${JSBSIM_CONTROLS}" ] && bridge_args+=( --controls "${JSBSIM_CONTROLS}" )
+  # shellcheck disable=SC2206
+  [ -n "${BRIDGE_ARGS}" ] && bridge_args+=( ${BRIDGE_ARGS} )
+  BRIDGE_LOG="${RUN_DIR}/bridge.log"
+  : > "${BRIDGE_LOG}"
+  python3 "${BRIDGE}" "${bridge_args[@]}" > "${BRIDGE_LOG}" 2>&1 &
+  bridge_pid=$!
+  ( tail -n +1 -F "${BRIDGE_LOG}" 2>/dev/null | sed -u "s/^/[bridge] /" ) &
+  for _ in $(seq 1 100); do
+    grep -q "waiting for SITL" "${BRIDGE_LOG}" && break
+    if ! kill -0 "${bridge_pid}" 2>/dev/null; then
+      sleep 0.5
+      echo "FATAL: the JSBSim bridge exited, see the [bridge] lines above." >&2
+      exit 1
+    fi
+    sleep 0.2
+  done
 fi
 
 exec "${args[@]}"

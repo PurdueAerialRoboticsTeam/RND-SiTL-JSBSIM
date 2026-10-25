@@ -117,6 +117,72 @@ Compile without starting the simulator (useful to check a source edit):
 docker compose run --rm sitl build
 ```
 
+## JSON backend: all 16 servo channels
+
+The default backend (`SIM_BACKEND=jsbsim`) is ArduPilot's own, which drives
+only SERVO1..4 (aileron, elevator, throttle, rudder). `SIM_BACKEND=json` runs
+JSBSim in a bridge over SITL's JSON interface instead: every servo output can
+drive any JSBSim input, mapped per aircraft by a `Controls.xml` in the
+[PteroSimAircrafts](https://github.com/PteroLabsAI/PteroSimAircrafts) format.
+The bridge is `libraries/SITL/examples/JSON/JSBSim/`; its readme covers the
+details.
+
+Rebuild the image once after pulling this change (it adds JSBSim's Python
+module; on Apple Silicon this compiles for a few minutes):
+
+```bash
+docker compose build
+```
+
+The Rascal, with the same bindings as the default backend:
+
+```bash
+docker compose run --rm --service-ports -e SIM_BACKEND=json sitl
+```
+
+The bridge's output appears in the log as `[bridge]` lines, including the
+binding table and a timing report every 10 seconds.
+
+### PteroSimAircrafts' fixed-wing aircraft
+
+Clone the aircraft into `sitl-docker/aircraft/` (git-ignored, and inside the
+repository, so the container sees it with no extra mount):
+
+```bash
+git clone https://github.com/PteroLabsAI/PteroSimAircrafts.git aircraft/PteroSimAircrafts
+```
+
+Cessna 172 with its own bindings and ArduPlane parameters:
+
+```bash
+docker compose run --rm --service-ports -e SIM_BACKEND=json -e JSBSIM_MODEL=c172p -e JSBSIM_AIRCRAFT_DIR=sitl-docker/aircraft/PteroSimAircrafts -e JSON_FRAME=plane -e PARAM_FILES=sitl-docker/aircraft/PteroSimAircrafts/c172p/firmwares/ardupilot_c172p.param -e BRIDGE_ARGS="--pitch 0 --agl 1" sitl
+```
+
+`advanced_plane`, with ArduPilot bindings and parameters from this
+repository (it ships PX4 ones only):
+
+```bash
+docker compose run --rm --service-ports -e SIM_BACKEND=json -e JSBSIM_MODEL=advanced_plane -e JSBSIM_AIRCRAFT_DIR=sitl-docker/aircraft/PteroSimAircrafts -e JSBSIM_CONTROLS=libraries/SITL/examples/JSON/JSBSim/pterosim/advanced_plane/Controls.xml -e JSON_FRAME=plane -e PARAM_FILES=libraries/SITL/examples/JSON/JSBSim/pterosim/advanced_plane/ardupilot_advanced_plane.param -e BRIDGE_ARGS="--pitch 0 --agl 0.5" sitl
+```
+
+What was tested and the known limits of each are in
+`libraries/SITL/examples/JSON/JSBSim/pterosim/README.md`. VTOL aircraft are
+not supported yet.
+
+| Variable | Default | |
+|---|---|---|
+| `SIM_BACKEND` | `jsbsim` | `json` for the bridge |
+| `JSBSIM_MODEL` | model in `FRAME`, else `Rascal` | aircraft name |
+| `JSBSIM_AIRCRAFT_DIR` | `Tools/autotest/aircraft` | folder holding `<model>/<model>.xml` |
+| `JSBSIM_CONTROLS` | the model's own `Controls.xml`, else SERVO1..4 | bindings file |
+| `JSON_FRAME` | `jsbsim-json` | base parameters: `jsbsim-json` (`plane-jsbsim.parm`, for the Rascal) or `plane` (`models/plane.parm`, for PteroSim aircraft) |
+| `PARAM_FILES` | none | parameter files added on top, comma separated |
+| `BRIDGE_ARGS` | none | extra bridge options, e.g. `--pitch 0 --agl 1` for a nose-wheel aircraft |
+
+Relative paths are relative to the repository. Do not mix `plane-jsbsim.parm`
+with PteroSim aircraft: it reverses elevator and rudder, and their bindings
+already do.
+
 ## Files you should not commit
 
 These are regenerated on every run and are ignored by git:
@@ -125,6 +191,7 @@ These are regenerated on every run and are ignored by git:
 - `Tools/autotest/jsbsim_start_*.xml`, `Tools/autotest/jsbsim_fgout_*.xml`
 - `build/` (compiled output)
 - `sitl-docker/work/` (parameters in `eeprom.bin`, dataflash logs, terrain)
+- `sitl-docker/aircraft/` (aircraft cloned from other repositories)
 
 ## Adding another aircraft
 

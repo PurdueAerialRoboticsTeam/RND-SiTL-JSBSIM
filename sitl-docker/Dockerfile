@@ -15,7 +15,8 @@ ARG DEBIAN_FRONTEND=noninteractive
 # ArduPilot is NOT in the image. Its source is this git repository, which is
 # bind-mounted at /opt/ardupilot and compiled by entrypoint.sh at startup.
 ARG JSBSIM_REPO=https://github.com/JSBSim-Team/jsbsim.git
-# Pinned to a release tag so every computer builds the same JSBSim.
+# Pinned to a release tag so every computer builds the same JSBSim. The
+# Python module for the JSON backend is installed at the same version.
 ARG JSBSIM_REF=v1.3.3
 # Set to "-march=native -mtune=native" ONLY if the image will never leave this
 # machine. Leave empty for a portable image.
@@ -74,6 +75,14 @@ RUN python3 -m venv "${VIRTUAL_ENV}" \
       "empy==3.3.4" \
       pexpect future lxml numpy pyserial requests \
       pymavlink dronecan MAVProxy
+
+# JSBSim's Python module, for the JSON backend (SIM_BACKEND=json). Same
+# release as the JSBSim binary above, so JSBSIM_REF must be a release tag.
+# PyPI has wheels for x86_64; on arm64 (Apple Silicon, Raspberry Pi) pip
+# compiles the same release from its source package, which takes a few
+# minutes.
+RUN pip install --no-cache-dir "jsbsim==${JSBSIM_REF#v}" \
+ && python3 -c "import jsbsim; print('JSBSim Python module', jsbsim.__version__)"
 
 # --- ArduPilot --------------------------------------------------------------
 # /opt/ardupilot is only a mount point for the repository on the host. The host

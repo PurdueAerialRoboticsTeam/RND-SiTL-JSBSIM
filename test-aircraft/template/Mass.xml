@@ -19,15 +19,22 @@
   with <radius> and <length>.
 
   From CAD: export the airframe without battery and payload, mass properties about its own CG.
-  ixz is 0 here; before entering a CAD value, check its sign convention against JSBSim's
-  mass_balance documentation (negated_crossproduct_inertia), then check the result with
-  inertia/ixz-slugs_ft2 at run time.
+
+  Products of inertia (ixz): negated_crossproduct_inertia="false", JSBSim's recommended setting
+  and the usual flight-dynamics convention, means ixz is entered as the plain integral
+  +integral(x * z * dm) about the CG, in the structural axes (x aft, z up). The product x*z is the
+  same in body axes (x forward, z down), so the textbook / CAD Ixz goes in unchanged, as long as
+  the CAD tool reports the plain integral (not its negative) and both CAD axes are flipped
+  together. Mass aft and high (the V-tail) or forward and low (a battery under the nose) makes
+  ixz positive; aft and low or forward and high makes it negative.
+  At run time, the property inertia/ixz-slugs_ft2 is the inertia-matrix element J(1,3), which is
+  the NEGATIVE of Ixz: entering +0.01 here shows -0.01 there (checked in JSBSim 1.3.3).
 -->
-<mass_balance negated_crossproduct_inertia="true">
+<mass_balance negated_crossproduct_inertia="false">
   <ixx unit="KG*M2"> 0.15 </ixx>          <!-- roll inertia: resistance to rolling (about the fuselage axis) -->
   <iyy unit="KG*M2"> 0.20 </iyy>          <!-- pitch inertia: resistance to pitching nose up/down -->
   <izz unit="KG*M2"> 0.33 </izz>          <!-- yaw inertia: resistance to yawing nose left/right -->
-  <ixz unit="KG*M2"> 0.00 </ixz>          <!-- roll-yaw product of inertia (diagonal mass spread in side view) -->
+  <ixz unit="KG*M2"> 0.00 </ixz>          <!-- roll-yaw product of inertia, +integral(x*z*dm) (diagonal mass spread in side view) -->
   <emptywt unit="KG"> 1.70 </emptywt>     <!-- airframe mass, without the point masses below -->
   <location name="CG" unit="M">           <!-- airframe centre of gravity, metres from the nose -->
     <x> 0.512 </x>                        <!-- aft of the nose -->

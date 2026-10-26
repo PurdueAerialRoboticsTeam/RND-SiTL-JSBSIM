@@ -182,6 +182,29 @@ fi
 [ -n "${EXTRA_ARGS}" ] && args+=( ${EXTRA_ARGS} )
 args+=( "$@" )
 
+# --- Run logs ---------------------------------------------------------------
+# One folder per start under work/runs/ (sitl-docker/work/runs on the host, which
+# git ignores): the SITL console (sitl.log), the bridge (bridge.log, JSON backend)
+# and run.txt with the settings and this run's first dataflash log. The .BIN
+# dataflash logs themselves stay in work/logs/, where ArduPilot writes them.
+RUN_LOGS="${RUN_DIR}/runs/$(date +%Y%m%d-%H%M%S)-${SIM_BACKEND}-${JSBSIM_MODEL}"
+mkdir -p "${RUN_LOGS}"
+last_log="$(tr -dc '0-9' < "${RUN_DIR}/logs/LASTLOG.TXT" 2>/dev/null)"
+git_state="$(git -C "${AP_DIR}" rev-parse --abbrev-ref HEAD 2>/dev/null) $(git -C "${AP_DIR}" rev-parse --short HEAD 2>/dev/null)"
+git -C "${AP_DIR}" diff --quiet HEAD 2>/dev/null || git_state="${git_state} (with uncommitted changes)"
+cat > "${RUN_LOGS}/run.txt" <<EOF
+started     : $(date -u +%Y-%m-%dT%H:%M:%SZ)
+git         : ${git_state}
+vehicle     : ${VEHICLE}
+backend     : ${SIM_BACKEND}
+aircraft    : ${JSBSIM_MODEL}
+frame       : ${sim_frame}
+param files : ${PARAM_FILES:-none}
+location    : ${CUSTOM_LOCATION:-${LOCATION}}
+speedup     : ${SPEEDUP}
+dataflash   : logs/$(printf '%08d' $(( 10#${last_log:-0} + 1 ))).BIN onwards
+EOF
+
 base_port=$(( 5760 + INSTANCE * 10 ))
 cat <<EOF
 --------------------------------------------------------------------
@@ -191,7 +214,8 @@ cat <<EOF
    frame      : ${sim_frame}
    location   : ${CUSTOM_LOCATION:-${LOCATION}}
    speedup    : ${SPEEDUP}x
-   run dir    : ${RUN_DIR}
+   run dir    : ${RUN_DIR} (sitl-docker/work on the host)
+   run logs   : ${RUN_LOGS#"${RUN_DIR}"/}/ (dataflash .BIN logs in logs/)
    MAVProxy   : $([ "${USE_MAVPROXY}" = "1" ] && echo "yes -> ${MAVPROXY_OUT:-console only}" || echo "no")
    FlightGear : ${fg_target}
 
@@ -201,12 +225,15 @@ cat <<EOF
 EOF
 
 # There is no terminal emulator in a container, so run_in_terminal_window.sh
-# detaches SITL into /tmp/<Vehicle>.log instead of showing it. Mirror that file
-# to stdout so autopilot and JSBSim output reach `docker compose logs`.
+# detaches SITL into /tmp/<Vehicle>.log instead of showing it. Copy that file
+# into the run logs, and to stdout so autopilot and JSBSim output reach
+# `docker compose logs`.
+SITL_LOG="/tmp/${VEHICLE}.log"
+: > "${SITL_LOG}"
 if [ "${LOG_TO_STDOUT}" = "1" ]; then
-  SITL_LOG="/tmp/${VEHICLE}.log"
-  : > "${SITL_LOG}"
-  ( tail -n +1 -F "${SITL_LOG}" 2>/dev/null | sed -u "s/^/[${VEHICLE}] /" ) &
+  ( tail -n +1 -F "${SITL_LOG}" 2>/dev/null | tee -a "${RUN_LOGS}/sitl.log" | sed -u "s/^/[${VEHICLE}] /" ) &
+else
+  ( tail -n +1 -F "${SITL_LOG}" >> "${RUN_LOGS}/sitl.log" 2>/dev/null ) &
 fi
 
 # --- JSON backend: start the bridge first ----------------------------------
@@ -226,7 +253,7 @@ if [ "${SIM_BACKEND}" = "json" ]; then
   [ -n "${JSBSIM_CONTROLS}" ] && bridge_args+=( --controls "${JSBSIM_CONTROLS}" )
   # shellcheck disable=SC2206
   [ -n "${BRIDGE_ARGS}" ] && bridge_args+=( ${BRIDGE_ARGS} )
-  BRIDGE_LOG="${RUN_DIR}/bridge.log"
+  BRIDGE_LOG="${RUN_LOGS}/bridge.log"
   : > "${BRIDGE_LOG}"
   python3 "${BRIDGE}" "${bridge_args[@]}" > "${BRIDGE_LOG}" 2>&1 &
   bridge_pid=$!

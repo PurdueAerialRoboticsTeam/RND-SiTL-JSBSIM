@@ -180,7 +180,32 @@ These are regenerated on every run and are ignored by git:
 - `Tools/autotest/aircraft/*/reset.xml`
 - `Tools/autotest/jsbsim_start_*.xml`, `Tools/autotest/jsbsim_fgout_*.xml`
 - `build/` (compiled output)
-- `sitl-docker/work/` (parameters in `eeprom.bin`, dataflash logs, terrain)
+- `sitl-docker/work/` (parameters in `eeprom.bin`, logs, terrain)
+
+## Where logs go
+
+Everything a run writes is kept in `sitl-docker/work/` on your computer, which
+git ignores, so logs are never committed:
+
+```
+sitl-docker/work/
+├── logs/00000012.BIN …          dataflash logs, one per arm (MAVExplorer, UAV Log Viewer, Mission Planner)
+├── runs/20261025-231500-json-template/
+│   ├── run.txt                  backend, aircraft, parameter files, location, git commit,
+│   │                            and the first dataflash log of this run
+│   ├── sitl.log                 SITL's console output
+│   └── bridge.log               the JSON bridge's output (SIM_BACKEND=json)
+├── eeprom.bin                   saved parameters (WIPE_EEPROM=1 starts fresh)
+└── terrain/                     terrain tiles
+```
+
+The run folder's name and the first log number are also printed in the
+startup banner. Nothing is deleted automatically; clear old `logs/` and
+`runs/` folders by hand when they get large.
+
+Running SITL without Docker, `sim_vehicle.py` writes `logs/`, `eeprom.bin`
+and `terrain/` into the folder it is started from; those are ignored by git
+too.
 
 ## Adding another aircraft
 

@@ -160,3 +160,16 @@ def test_aircraft_are_found_in_test_aircraft_then_autotest():
     assert jb.find_aircraft_dir('advanced_plane') == jb.AIRCRAFT_SEARCH[0]
     assert jb.find_aircraft_dir('Rascal') == jb.AIRCRAFT_SEARCH[1]
     assert jb.find_aircraft_dir('NoSuchPlane') is None
+
+
+def test_model_is_loaded_at_sitl_rate(capsys):
+    # JSBSim's flight-control filters and actuators take the timestep when the
+    # model loads, so it must already be SITL's then, not JSBSim's 120 Hz default
+    home = jb.read_location('CMAC', jb.DEFAULT_ROOT)
+    m = jb.JSBSimModel(jb.DEFAULT_ROOT, 'Rascal', home, 0.5, 0.0, rate_hz=1200)
+    assert m.dt() == pytest.approx(1.0 / 1200)
+    m.set_rate(1200)
+    assert 'warning' not in capsys.readouterr().out
+    m.set_rate(400)
+    assert m.dt() == pytest.approx(1.0 / 400)
+    assert '--rate 400' in capsys.readouterr().out

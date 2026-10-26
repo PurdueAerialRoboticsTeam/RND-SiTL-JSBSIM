@@ -52,6 +52,7 @@ Options (`--help` for all):
 | `--servo-lag` | `0.14` | servo time constant in seconds, as `SIM_SERVO_SPEED`, for rows without `lag=`; `0` disables |
 | `--start-engines` | off | start every engine at reset; otherwise a `Motor` row starts its engine on the first throttle above 1% |
 | `--agl`, `--pitch` | `0.5`, `0` | start height (m) and pitch (deg) before JSBSim's ground trim settles the aircraft on its gear; a nose-up start crashes the trim for the c172p |
+| `--rate` | `1200` | SITL frame rate (`SIM_RATE_HZ`) the model is loaded for: JSBSim's filters and actuators take the timestep when the model loads, so it must match SITL's; the bridge warns if it does not |
 | `--stats` | `10` | seconds between timing reports; `0` disables |
 
 ## How it works

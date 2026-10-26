@@ -90,14 +90,19 @@ class JSBSimModel:
     '''one JSBSim aircraft, stepped one SITL frame at a time'''
 
     def __init__(self, root, aircraft, home, agl_m, pitch_deg, aircraft_dir=None,
-                 start_engines=True, debug_level=0):
+                 start_engines=True, debug_level=0, rate_hz=1200.0):
         self.start_engines = start_engines
-        self.rate_hz = None
         # properties written by bindings, which engine start must leave alone
         self.bound = set()
 
         self.fdm = jsbsim.FGFDMExec(root)
         self.fdm.set_debug_level(debug_level)
+        # JSBSim's flight-control components (filters, actuators, delays) take the
+        # timestep once, when the model loads, so it must be SITL's before loading
+        self.fdm.set_dt(1.0 / rate_hz)
+        self.rate_hz = rate_hz
+        self.load_rate_hz = rate_hz
+        self.rate_warned = False
         if aircraft_dir is not None:
             self.fdm.set_aircraft_path(aircraft_dir)
         if not self.fdm.load_model(aircraft):
@@ -156,6 +161,11 @@ class JSBSimModel:
         if rate_hz > 0 and rate_hz != self.rate_hz:
             self.rate_hz = rate_hz
             self.fdm.set_dt(1.0 / rate_hz)
+            if rate_hz != self.load_rate_hz and not self.rate_warned:
+                self.rate_warned = True
+                print("bridge: warning: SITL runs at %u Hz but the model was loaded for %u Hz, so filters and "
+                      "actuators in its flight controls run %.2f times too fast; start the bridge with --rate %u" % (
+                          rate_hz, self.load_rate_hz, rate_hz / self.load_rate_hz, rate_hz))
 
     def dt(self):
         return self.fdm.get_delta_t()
@@ -300,6 +310,8 @@ def main():
                         help='servo time constant, s, as SIM_SERVO_SPEED, for rows without lag=; 0 disables')
     parser.add_argument('--start-engines', action='store_true',
                         help='start every engine at reset even with a Controls.xml (Motor rows start them otherwise)')
+    parser.add_argument('--rate', type=float, default=1200.0,
+                        help='SITL frame rate the model is loaded for, Hz (SIM_RATE_HZ, default %(default)s)')
     parser.add_argument('--stats', type=float, default=10.0, help='seconds between timing reports, 0 disables')
     parser.add_argument('--jsbsim-debug', type=int, default=0, help='JSBSim debug level')
     args = parser.parse_args()
@@ -328,7 +340,7 @@ def main():
     model = JSBSimModel(args.root, args.aircraft, home_pos, args.agl, args.pitch,
                         aircraft_dir=aircraft_dir,
                         start_engines=controls_path is None or args.start_engines,
-                        debug_level=args.jsbsim_debug)
+                        debug_level=args.jsbsim_debug, rate_hz=args.rate)
     try:
         controls.check_properties(rows, model.has_property)
     except controls.BindingError as ex:

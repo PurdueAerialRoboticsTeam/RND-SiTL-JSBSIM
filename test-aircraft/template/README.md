@@ -109,8 +109,8 @@ inverted. `Controls.xml` explains each.
 |---|---|---|---|
 | Wing area, span, chord, tail geometry | 0.40 m², 1.6 m, 0.25 m, 35° V-tail 0.55 m aft | `Metrics.xml` | Design / XFLR5 |
 | IMU position | at the CG | `Metrics.xml` `EYEPOINT` | Autopilot mounting |
-| Mass, CG, inertia | 2.5 kg, 0.50 m, 0.15 / 0.20 / 0.33 kg·m² | `Mass.xml` | CAD, then weigh and swing test |
-| Battery, payload | 0.6 kg, 0.2 kg | `Mass.xml` point masses | Components |
+| Airframe mass, CG, inertia (without battery and payload, about the airframe's own CG) | 1.7 kg, 0.512 m, 0.15 / 0.20 / 0.33 kg·m² | `Mass.xml` | CAD, then weigh and swing test |
+| Battery, payload | 0.6 kg, 0.2 kg; JSBSim adds them to the inertia from their positions | `Mass.xml` point masses | Components (add a battery's own `<ixx>`… from CAD) |
 | Lift, drag, pitch vs alpha | CL0 0.25, slope 4.62/rad, CLmax 1.2, CD0 0.03 | `Aero.xml` tables | XFLR5 polars, drag build-up |
 | Stability and damping derivatives | Cma −0.8, Cmq −12, Clp −0.45, Cnb 0.08 … | `Aero.xml` | XFLR5 stability analysis |
 | Control effectiveness per surface | ailerons 0.10/rad, V-tail panels 0.175/rad … | `Aero.xml` | XFLR5 control polars |

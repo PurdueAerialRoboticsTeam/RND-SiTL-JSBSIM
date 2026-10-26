@@ -5,7 +5,23 @@
 
   Total 2.5 kg: airframe 1.7 kg (everything except battery and payload) + battery 0.6 kg +
   payload 0.2 kg. The airframe CG is placed so the total CG lands on AERORP (x = 0.50 m).
-  Inertias are about the total CG, airframe only; JSBSim adds the point masses' share.
+
+  ixx, iyy, izz, ixz are the AIRFRAME ONLY (emptywt), about the AIRFRAME'S OWN CG (the CG
+  location below), not about the loaded aircraft's CG. Every step JSBSim builds the loaded
+  aircraft's inertia from them (FGMassBalance::Run): it moves them to the current total CG
+  (parallel-axis theorem), then adds each point mass as mass x distance squared from that CG,
+  plus the point mass's own inertia if it has one. So moving or reweighing the battery or
+  payload changes the inertia correctly without editing these numbers. Here the battery and
+  payload sit near the CG on the centreline and add only about 0.002 kg*m2 to iyy and izz.
+
+  A point mass is a dot unless given its own inertia: either its own <ixx>/<iyy>/<izz> inside
+  <pointmass> (use this for a battery, from CAD), or a <form shape="cylinder|tube|sphere|ball">
+  with <radius> and <length>.
+
+  From CAD: export the airframe without battery and payload, mass properties about its own CG.
+  ixz is 0 here; before entering a CAD value, check its sign convention against JSBSim's
+  mass_balance documentation (negated_crossproduct_inertia), then check the result with
+  inertia/ixz-slugs_ft2 at run time.
 -->
 <mass_balance negated_crossproduct_inertia="true">
   <ixx unit="KG*M2"> 0.15 </ixx>

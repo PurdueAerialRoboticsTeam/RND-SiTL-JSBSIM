@@ -71,11 +71,29 @@ EXTRA_ARGS="${EXTRA_ARGS:-}"
 # --- JSON backend (SIM_BACKEND=json) ---------------------------------------
 # The aircraft defaults to the model named in FRAME (jsbsim:Model), else Rascal.
 JSBSIM_MODEL="${JSBSIM_MODEL:-$([[ "${FRAME}" == *:* ]] && echo "${FRAME#*:}" || echo Rascal)}"
-JSBSIM_AIRCRAFT_DIR="${JSBSIM_AIRCRAFT_DIR:-}"  # folder holding <model>/<model>.xml; default Tools/autotest/aircraft
+JSBSIM_AIRCRAFT_DIR="${JSBSIM_AIRCRAFT_DIR:-}"  # folder holding <model>/<model>.xml; default test-aircraft, then Tools/autotest/aircraft
 JSBSIM_CONTROLS="${JSBSIM_CONTROLS:-}"          # Controls.xml; default the model's own, else SERVO1..4
-JSON_FRAME="${JSON_FRAME:-jsbsim-json}"         # base parameters: jsbsim-json (plane-jsbsim.parm) | plane (models/plane.parm)
+JSON_FRAME="${JSON_FRAME:-}"                    # base parameters: jsbsim-json (plane-jsbsim.parm) | plane (models/plane.parm)
 PARAM_FILES="${PARAM_FILES:-}"                  # comma separated parameter files added on top
-BRIDGE_ARGS="${BRIDGE_ARGS:-}"                  # extra bridge options, e.g. --pitch 0 --agl 1
+BRIDGE_ARGS="${BRIDGE_ARGS:-}"                  # extra bridge options, see jsbsim_json_bridge.py --help
+
+# An aircraft that ships its own ArduPilot parameters, as PteroSimAircrafts'
+# do in firmwares/ardupilot_<model>.param, flies with them on top of
+# models/plane.parm, the base they are written for, unless told otherwise.
+if [ "${SIM_BACKEND:-}" = "json" ] && [ -z "${JSON_FRAME}" ] && [ -z "${PARAM_FILES}" ]; then
+  for d in ${JSBSIM_AIRCRAFT_DIR:-test-aircraft Tools/autotest/aircraft}; do
+    [[ "${d}" = /* ]] || d="${AP_DIR}/${d}"
+    if [ -f "${d}/${JSBSIM_MODEL}/${JSBSIM_MODEL}.xml" ]; then
+      own="${d}/${JSBSIM_MODEL}/firmwares/ardupilot_${JSBSIM_MODEL}.param"
+      if [ -f "${own}" ]; then
+        JSON_FRAME=plane
+        PARAM_FILES="${own}"
+      fi
+      break
+    fi
+  done
+fi
+JSON_FRAME="${JSON_FRAME:-jsbsim-json}"
 
 SIM_VEHICLE="${AP_DIR}/Tools/autotest/sim_vehicle.py"
 

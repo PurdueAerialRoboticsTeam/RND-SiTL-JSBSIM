@@ -143,44 +143,34 @@ docker compose run --rm --service-ports -e SIM_BACKEND=json sitl
 The bridge's output appears in the log as `[bridge]` lines, including the
 binding table and a timing report every 10 seconds.
 
-### PteroSimAircrafts' fixed-wing aircraft
+### Test aircraft with more channels
 
-Clone the aircraft into `sitl-docker/aircraft/` (git-ignored, and inside the
-repository, so the container sees it with no extra mount):
-
-```bash
-git clone https://github.com/PteroLabsAI/PteroSimAircrafts.git aircraft/PteroSimAircrafts
-```
-
-Cessna 172 with its own bindings and ArduPlane parameters:
+`test-aircraft/` holds fixed-wing aircraft from
+[PteroSimAircrafts](https://github.com/PteroLabsAI/PteroSimAircrafts), each
+with its own `Controls.xml` and ArduPlane parameters:
 
 ```bash
-docker compose run --rm --service-ports -e SIM_BACKEND=json -e JSBSIM_MODEL=c172p -e JSBSIM_AIRCRAFT_DIR=sitl-docker/aircraft/PteroSimAircrafts -e JSON_FRAME=plane -e PARAM_FILES=sitl-docker/aircraft/PteroSimAircrafts/c172p/firmwares/ardupilot_c172p.param -e BRIDGE_ARGS="--pitch 0 --agl 1" sitl
+# Cessna 172: SERVO1-5, including flaps on SERVO5
+docker compose run --rm --service-ports -e SIM_BACKEND=json -e JSBSIM_MODEL=c172p sitl
+# PX4's small electric test plane
+docker compose run --rm --service-ports -e SIM_BACKEND=json -e JSBSIM_MODEL=advanced_plane sitl
 ```
 
-`advanced_plane`, with ArduPilot bindings and parameters from this
-repository (it ships PX4 ones only):
-
-```bash
-docker compose run --rm --service-ports -e SIM_BACKEND=json -e JSBSIM_MODEL=advanced_plane -e JSBSIM_AIRCRAFT_DIR=sitl-docker/aircraft/PteroSimAircrafts -e JSBSIM_CONTROLS=libraries/SITL/examples/JSON/JSBSim/pterosim/advanced_plane/Controls.xml -e JSON_FRAME=plane -e PARAM_FILES=libraries/SITL/examples/JSON/JSBSim/pterosim/advanced_plane/ardupilot_advanced_plane.param -e BRIDGE_ARGS="--pitch 0 --agl 0.5" sitl
-```
-
-What was tested and the known limits of each are in
-`libraries/SITL/examples/JSON/JSBSim/pterosim/README.md`. VTOL aircraft are
-not supported yet.
+What each aircraft is, what was tested and its known limits are in
+`test-aircraft/README.md`. VTOL aircraft are not supported yet.
 
 | Variable | Default | |
 |---|---|---|
 | `SIM_BACKEND` | `jsbsim` | `json` for the bridge |
-| `JSBSIM_MODEL` | model in `FRAME`, else `Rascal` | aircraft name |
-| `JSBSIM_AIRCRAFT_DIR` | `Tools/autotest/aircraft` | folder holding `<model>/<model>.xml` |
+| `JSBSIM_MODEL` | model in `FRAME`, else `Rascal` | aircraft name, looked for in `test-aircraft/` then `Tools/autotest/aircraft/` |
+| `JSBSIM_AIRCRAFT_DIR` | those two folders | another folder holding `<model>/<model>.xml` |
 | `JSBSIM_CONTROLS` | the model's own `Controls.xml`, else SERVO1..4 | bindings file |
-| `JSON_FRAME` | `jsbsim-json` | base parameters: `jsbsim-json` (`plane-jsbsim.parm`, for the Rascal) or `plane` (`models/plane.parm`, for PteroSim aircraft) |
-| `PARAM_FILES` | none | parameter files added on top, comma separated |
-| `BRIDGE_ARGS` | none | extra bridge options, e.g. `--pitch 0 --agl 1` for a nose-wheel aircraft |
+| `JSON_FRAME` | `plane` if the model has `firmwares/ardupilot_<model>.param`, else `jsbsim-json` | base parameters: `jsbsim-json` (`plane-jsbsim.parm`, for the Rascal) or `plane` (`models/plane.parm`) |
+| `PARAM_FILES` | the model's `firmwares/ardupilot_<model>.param`, if any | parameter files added on top, comma separated |
+| `BRIDGE_ARGS` | none | extra bridge options (`jsbsim_json_bridge.py --help`) |
 
 Relative paths are relative to the repository. Do not mix `plane-jsbsim.parm`
-with PteroSim aircraft: it reverses elevator and rudder, and their bindings
+with the test aircraft: it reverses elevator and rudder, and their bindings
 already do.
 
 ## Files you should not commit
@@ -191,7 +181,6 @@ These are regenerated on every run and are ignored by git:
 - `Tools/autotest/jsbsim_start_*.xml`, `Tools/autotest/jsbsim_fgout_*.xml`
 - `build/` (compiled output)
 - `sitl-docker/work/` (parameters in `eeprom.bin`, dataflash logs, terrain)
-- `sitl-docker/aircraft/` (aircraft cloned from other repositories)
 
 ## Adding another aircraft
 

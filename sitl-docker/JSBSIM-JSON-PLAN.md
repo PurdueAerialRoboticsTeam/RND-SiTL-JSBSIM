@@ -71,7 +71,7 @@ Decisions:
 | `libraries/SITL/examples/JSON/JSBSim/controls.py` | new | Parses `Controls.xml`, validates rows, applies PWM to properties. No JSBSim import, so it can be unit tested alone. |
 | `libraries/SITL/examples/JSON/JSBSim/readme.md` | new | How to run it, binding format, troubleshooting. |
 | `libraries/SITL/examples/JSON/JSBSim/tests/test_controls.py` | new | pytest for the binding maths and parser. |
-| `libraries/SITL/examples/JSON/JSBSim/pterosim/` | new | ArduPilot bindings and parameters for PteroSimAircrafts models that ship without them (`advanced_plane`). |
+| `test-aircraft/` | new | Fixed-wing test aircraft from PteroSimAircrafts (`c172p`, `advanced_plane`) with ArduPilot bindings and parameters; the bridge looks here first. |
 | `Tools/autotest/default_params/plane-jsbsim-json.parm` | new | Overrides on top of `plane-jsbsim.parm` for the JSON frame. |
 | `Tools/autotest/pysim/vehicleinfo.py` | changed | New ArduPlane frame `jsbsim-json` with `"model": "JSON:127.0.0.1"`. The exact-match lookup in `options_for_frame()` runs before the `startswith("jsbsim")` fallback, so it does not collide with `jsbsim`. |
 | `sitl-docker/Dockerfile` | changed | Build JSBSim's Python module from the same pinned source (`JSBSIM_REF=v1.3.3`, `-DBUILD_PYTHON_MODULE=ON`, install into `/opt/venv`). Not `pip install jsbsim`: PyPI 1.3.3 has no Linux aarch64 wheel, which is what Docker runs on Apple Silicon. |
@@ -555,9 +555,9 @@ Each phase ends with something that runs.
    that needs more than 4 channels with its own `Controls.xml` unmodified:
    `explora` (ArduPlane tailsitter, channels 4, 5, 8, 9, param file in
    `firmwares/ardupilot_explora.param`) or `c172p` (flaps on channel 4).
-   *Status: PteroSimAircrafts' fixed-wing `c172p` (its own bindings and
-   parameters) and `advanced_plane` (bindings and parameters in
-   `pterosim/`) fly AUTO takeoff, a box and RTL; see `pterosim/README.md`.
+   *Status: PteroSimAircrafts' fixed-wing `c172p` and `advanced_plane`,
+   copied to `test-aircraft/` with ArduPilot bindings and parameters, fly
+   AUTO takeoff, a box and RTL; see `test-aircraft/README.md`.
    The 16-channel sweep and the VTOL models are not done.*
 4. **Environment.** Wind and turbulence from bridge options; rangefinder;
    battery fields from configured properties; optional `--mavlink` live

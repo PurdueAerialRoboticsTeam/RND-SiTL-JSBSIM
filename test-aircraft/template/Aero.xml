@@ -1,0 +1,713 @@
+<?xml version="1.0"?>
+<!--
+  Aerodynamics. ALL COEFFICIENTS ARE PLACEHOLDERS for a generic straight-wing aircraft (aspect
+  ratio 6.4) with a 35 deg V-tail; replace them with XFLR5 results (see the aircraft modeling
+  plan on the aircraft-modeling branch). Each term says how its number was set.
+
+  Forces are in wind axes (LIFT, DRAG, SIDE); moments in stability axes, the frame XFLR5 gives
+  its derivatives in, about AERORP (= the nominal CG). Rates are normalised the usual way:
+  p and r by b/2V (aero/bi2vel), q and alpha-dot by c/2V (aero/ci2vel).
+
+  Surfaces: +rad = trailing edge down (FlightControl.xml). Each surface is its own term, so one
+  surface failing or moving the wrong way affects the flight the way it would on the aircraft.
+  V-tail panels: each panel's normal force is 0.175/rad of deflection (panel area 0.04 m2 / wing
+  area 0.40 m2 x lift slope 3.5/rad x flap effectiveness 0.5), split by the 35 deg dihedral into
+  lift (cos 35 = 0.819) and side force (sin 35 = 0.574), acting 0.55 m behind the CG.
+
+  scale/* (FlightControl.xml) multiply the terms the tuning sweeps vary; all 1 by default.
+-->
+<aerodynamics>
+
+  <axis name="LIFT">
+      <function name="aero/coefficient/CL_alpha">
+        <description>Lift vs alpha: CL0 0.25, slope 4.62/rad, CLmax 1.2 at 11.8 deg, flat plate past stall</description>
+        <product>
+          <property>aero/qbar-psf</property>
+          <property>metrics/Sw-sqft</property>
+          <table>
+            <independentVar lookup="row">aero/alpha-rad</independentVar>
+            <tableData>
+               -3.1416    0.0000
+               -1.5708   -0.0000
+               -0.7854   -1.0500
+               -0.5236   -0.9093
+               -0.4363   -0.9000
+               -0.3491   -0.9000
+               -0.2618   -0.9000
+               -0.2094   -0.9000
+               -0.1745   -0.5562
+               -0.1396   -0.3950
+               -0.1047   -0.2337
+               -0.0698   -0.0725
+               -0.0349    0.0888
+                0.0000    0.2500
+                0.0349    0.4112
+                0.0698    0.5725
+                0.1047    0.7337
+                0.1396    0.8950
+                0.1745    1.0562
+                0.1920    1.1368
+                0.2094    1.1892
+                0.2269    1.1392
+                0.2443    1.0892
+                0.2793    0.9896
+                0.3142    0.9079
+                0.3491    0.8513
+                0.4363    0.8043
+                0.5236    0.9093
+                0.7854    1.0500
+                1.5708    0.0000
+                3.1416   -0.0000
+            </tableData>
+          </table>
+          <property>scale/lift</property>
+        </product>
+      </function>
+
+      <function name="aero/coefficient/CL_q">
+        <description>Lift due to pitch rate, CLq = 5.0</description>
+        <product>
+          <property>aero/qbar-psf</property>
+          <property>metrics/Sw-sqft</property>
+          <property>velocities/q-aero-rad_sec</property>
+          <property>aero/ci2vel</property>
+          <value> 5 </value>
+        </product>
+      </function>
+
+      <function name="aero/coefficient/CL_alphadot">
+        <description>Lift due to alpha rate (downwash lag), CLadot = 1.5</description>
+        <product>
+          <property>aero/qbar-psf</property>
+          <property>metrics/Sw-sqft</property>
+          <property>aero/alphadot-rad_sec</property>
+          <property>aero/ci2vel</property>
+          <value> 1.5 </value>
+        </product>
+      </function>
+
+      <function name="aero/coefficient/CL_flap_left">
+        <description>Left flap: +0.2 CL at 30 deg = 0.382/rad</description>
+        <product>
+          <property>aero/qbar-psf</property>
+          <property>metrics/Sw-sqft</property>
+          <property>fcs/flap-left-pos-rad</property>
+          <value> 0.382 </value>
+        </product>
+      </function>
+
+      <function name="aero/coefficient/CL_flap_right">
+        <description>Right flap: +0.2 CL at 30 deg</description>
+        <product>
+          <property>aero/qbar-psf</property>
+          <property>metrics/Sw-sqft</property>
+          <property>fcs/flap-right-pos-rad</property>
+          <value> 0.382 </value>
+        </product>
+      </function>
+
+      <function name="aero/coefficient/CL_spoiler_left">
+        <description>Left spoiler: -0.15 CL fully deployed</description>
+        <product>
+          <property>aero/qbar-psf</property>
+          <property>metrics/Sw-sqft</property>
+          <property>fcs/spoiler-left-pos-norm</property>
+          <value> -0.15 </value>
+        </product>
+      </function>
+
+      <function name="aero/coefficient/CL_spoiler_right">
+        <description>Right spoiler: -0.15 CL fully deployed</description>
+        <product>
+          <property>aero/qbar-psf</property>
+          <property>metrics/Sw-sqft</property>
+          <property>fcs/spoiler-right-pos-norm</property>
+          <value> -0.15 </value>
+        </product>
+      </function>
+
+      <function name="aero/coefficient/CL_ruddervator_left">
+        <description>Left V-tail panel: 0.175/rad normal force x cos(35)</description>
+        <product>
+          <property>aero/qbar-psf</property>
+          <property>metrics/Sw-sqft</property>
+          <property>fcs/ruddervator-left-pos-rad</property>
+          <value> 0.143 </value>
+        </product>
+      </function>
+
+      <function name="aero/coefficient/CL_ruddervator_right">
+        <description>Right V-tail panel: 0.175/rad normal force x cos(35)</description>
+        <product>
+          <property>aero/qbar-psf</property>
+          <property>metrics/Sw-sqft</property>
+          <property>fcs/ruddervator-right-pos-rad</property>
+          <value> 0.143 </value>
+        </product>
+      </function>
+  </axis>
+
+  <axis name="DRAG">
+      <function name="aero/coefficient/CD_alpha">
+        <description>Drag vs alpha: CD0 0.03 + CL^2/(pi 0.8 AR), separation drag past stall</description>
+        <product>
+          <property>aero/qbar-psf</property>
+          <property>metrics/Sw-sqft</property>
+          <table>
+            <independentVar lookup="row">aero/alpha-rad</independentVar>
+            <tableData>
+               -3.1416    0.0300
+               -1.5708    1.2300
+               -0.7854    0.6300
+               -0.5236    0.3928
+               -0.4363    0.3178
+               -0.3491    0.2428
+               -0.2618    0.1678
+               -0.2094    0.1228
+               -0.1745    0.0492
+               -0.1396    0.0397
+               -0.1047    0.0334
+               -0.0698    0.0303
+               -0.0349    0.0305
+                0.0000    0.0339
+                0.0349    0.0405
+                0.0698    0.0504
+                0.1047    0.0635
+                0.1396    0.0798
+                0.1745    0.0994
+                0.1920    0.1104
+                0.2094    0.1228
+                0.2269    0.1378
+                0.2443    0.1528
+                0.2793    0.1828
+                0.3142    0.2128
+                0.3491    0.2428
+                0.4363    0.3178
+                0.5236    0.3928
+                0.7854    0.6300
+                1.5708    1.2300
+                3.1416    0.0300
+            </tableData>
+          </table>
+          <property>scale/drag</property>
+        </product>
+      </function>
+
+      <function name="aero/coefficient/CD_beta">
+        <description>Drag due to sideslip, 0.15/rad</description>
+        <product>
+          <property>aero/qbar-psf</property>
+          <property>metrics/Sw-sqft</property>
+          <abs><property>aero/beta-rad</property></abs>
+          <value> 0.15 </value>
+        </product>
+      </function>
+
+      <function name="aero/coefficient/CD_aileron_left">
+        <description>Left aileron drag, 0.01/rad of deflection either way</description>
+        <product>
+          <property>aero/qbar-psf</property>
+          <property>metrics/Sw-sqft</property>
+          <abs><property>fcs/aileron-left-pos-rad</property></abs>
+          <value> 0.01 </value>
+        </product>
+      </function>
+
+      <function name="aero/coefficient/CD_aileron_right">
+        <description>Right aileron drag</description>
+        <product>
+          <property>aero/qbar-psf</property>
+          <property>metrics/Sw-sqft</property>
+          <abs><property>fcs/aileron-right-pos-rad</property></abs>
+          <value> 0.01 </value>
+        </product>
+      </function>
+
+      <function name="aero/coefficient/CD_ruddervator_left">
+        <description>Left ruddervator drag, 0.02/rad either way</description>
+        <product>
+          <property>aero/qbar-psf</property>
+          <property>metrics/Sw-sqft</property>
+          <abs><property>fcs/ruddervator-left-pos-rad</property></abs>
+          <value> 0.02 </value>
+        </product>
+      </function>
+
+      <function name="aero/coefficient/CD_ruddervator_right">
+        <description>Right ruddervator drag</description>
+        <product>
+          <property>aero/qbar-psf</property>
+          <property>metrics/Sw-sqft</property>
+          <abs><property>fcs/ruddervator-right-pos-rad</property></abs>
+          <value> 0.02 </value>
+        </product>
+      </function>
+
+      <function name="aero/coefficient/CD_flap_left">
+        <description>Left flap: +0.03 CD at 30 deg = 0.057/rad</description>
+        <product>
+          <property>aero/qbar-psf</property>
+          <property>metrics/Sw-sqft</property>
+          <property>fcs/flap-left-pos-rad</property>
+          <value> 0.057 </value>
+        </product>
+      </function>
+
+      <function name="aero/coefficient/CD_flap_right">
+        <description>Right flap: +0.03 CD at 30 deg</description>
+        <product>
+          <property>aero/qbar-psf</property>
+          <property>metrics/Sw-sqft</property>
+          <property>fcs/flap-right-pos-rad</property>
+          <value> 0.057 </value>
+        </product>
+      </function>
+
+      <function name="aero/coefficient/CD_spoiler_left">
+        <description>Left spoiler: +0.04 CD fully deployed</description>
+        <product>
+          <property>aero/qbar-psf</property>
+          <property>metrics/Sw-sqft</property>
+          <property>fcs/spoiler-left-pos-norm</property>
+          <value> 0.04 </value>
+        </product>
+      </function>
+
+      <function name="aero/coefficient/CD_spoiler_right">
+        <description>Right spoiler: +0.04 CD fully deployed</description>
+        <product>
+          <property>aero/qbar-psf</property>
+          <property>metrics/Sw-sqft</property>
+          <property>fcs/spoiler-right-pos-norm</property>
+          <value> 0.04 </value>
+        </product>
+      </function>
+
+      <function name="aero/coefficient/CD_gear_nose">
+        <description>Nose gear leg when extended: +0.008 CD</description>
+        <product>
+          <property>aero/qbar-psf</property>
+          <property>metrics/Sw-sqft</property>
+          <property>gear/unit[0]/pos-norm</property>
+          <value> 0.008 </value>
+        </product>
+      </function>
+
+      <function name="aero/coefficient/CD_gear_left">
+        <description>Left main gear leg when extended: +0.006 CD</description>
+        <product>
+          <property>aero/qbar-psf</property>
+          <property>metrics/Sw-sqft</property>
+          <property>gear/unit[1]/pos-norm</property>
+          <value> 0.006 </value>
+        </product>
+      </function>
+
+      <function name="aero/coefficient/CD_gear_right">
+        <description>Right main gear leg when extended: +0.006 CD</description>
+        <product>
+          <property>aero/qbar-psf</property>
+          <property>metrics/Sw-sqft</property>
+          <property>gear/unit[2]/pos-norm</property>
+          <value> 0.006 </value>
+        </product>
+      </function>
+  </axis>
+
+  <axis name="SIDE">
+      <function name="aero/coefficient/CY_beta">
+        <description>Side force due to sideslip, CYb = -0.35</description>
+        <product>
+          <property>aero/qbar-psf</property>
+          <property>metrics/Sw-sqft</property>
+          <property>aero/beta-rad</property>
+          <value> -0.35 </value>
+        </product>
+      </function>
+
+      <function name="aero/coefficient/CY_r">
+        <description>Side force due to yaw rate, CYr = 0.15</description>
+        <product>
+          <property>aero/qbar-psf</property>
+          <property>metrics/Sw-sqft</property>
+          <property>velocities/r-aero-rad_sec</property>
+          <property>aero/bi2vel</property>
+          <value> 0.15 </value>
+        </product>
+      </function>
+
+      <function name="aero/coefficient/CY_ruddervator_left">
+        <description>Left V-tail panel: 0.175/rad x sin(35), trailing edge down pushes the tail right</description>
+        <product>
+          <property>aero/qbar-psf</property>
+          <property>metrics/Sw-sqft</property>
+          <property>fcs/ruddervator-left-pos-rad</property>
+          <value> 0.1 </value>
+        </product>
+      </function>
+
+      <function name="aero/coefficient/CY_ruddervator_right">
+        <description>Right V-tail panel: trailing edge down pushes the tail left</description>
+        <product>
+          <property>aero/qbar-psf</property>
+          <property>metrics/Sw-sqft</property>
+          <property>fcs/ruddervator-right-pos-rad</property>
+          <value> -0.1 </value>
+        </product>
+      </function>
+  </axis>
+
+  <axis name="ROLL" frame="STABILITY">
+      <function name="aero/coefficient/Cl_beta">
+        <description>Dihedral effect, Clb = -0.08</description>
+        <product>
+          <property>aero/qbar-psf</property>
+          <property>metrics/Sw-sqft</property>
+          <property>metrics/bw-ft</property>
+          <property>aero/beta-rad</property>
+          <value> -0.08 </value>
+        </product>
+      </function>
+
+      <function name="aero/coefficient/Cl_p">
+        <description>Roll damping, Clp = -0.45</description>
+        <product>
+          <property>aero/qbar-psf</property>
+          <property>metrics/Sw-sqft</property>
+          <property>metrics/bw-ft</property>
+          <property>velocities/p-aero-rad_sec</property>
+          <property>aero/bi2vel</property>
+          <property>scale/roll-damping</property>
+          <value> -0.45 </value>
+        </product>
+      </function>
+
+      <function name="aero/coefficient/Cl_r">
+        <description>Roll due to yaw rate, Clr = 0.10</description>
+        <product>
+          <property>aero/qbar-psf</property>
+          <property>metrics/Sw-sqft</property>
+          <property>metrics/bw-ft</property>
+          <property>velocities/r-aero-rad_sec</property>
+          <property>aero/bi2vel</property>
+          <value> 0.1 </value>
+        </product>
+      </function>
+
+      <function name="aero/coefficient/Cl_aileron_left">
+        <description>Left aileron trailing edge down rolls right, 0.10/rad</description>
+        <product>
+          <property>aero/qbar-psf</property>
+          <property>metrics/Sw-sqft</property>
+          <property>metrics/bw-ft</property>
+          <property>fcs/aileron-left-pos-rad</property>
+          <property>scale/roll-power</property>
+          <value> 0.1 </value>
+        </product>
+      </function>
+
+      <function name="aero/coefficient/Cl_aileron_right">
+        <description>Right aileron trailing edge down rolls left, 0.10/rad</description>
+        <product>
+          <property>aero/qbar-psf</property>
+          <property>metrics/Sw-sqft</property>
+          <property>metrics/bw-ft</property>
+          <property>fcs/aileron-right-pos-rad</property>
+          <property>scale/roll-power</property>
+          <value> -0.1 </value>
+        </product>
+      </function>
+
+      <function name="aero/coefficient/Cl_flap_left">
+        <description>Left flap alone rolls right: 0.03 at 30 deg</description>
+        <product>
+          <property>aero/qbar-psf</property>
+          <property>metrics/Sw-sqft</property>
+          <property>metrics/bw-ft</property>
+          <property>fcs/flap-left-pos-rad</property>
+          <value> 0.057 </value>
+        </product>
+      </function>
+
+      <function name="aero/coefficient/Cl_flap_right">
+        <description>Right flap alone rolls left</description>
+        <product>
+          <property>aero/qbar-psf</property>
+          <property>metrics/Sw-sqft</property>
+          <property>metrics/bw-ft</property>
+          <property>fcs/flap-right-pos-rad</property>
+          <value> -0.057 </value>
+        </product>
+      </function>
+
+      <function name="aero/coefficient/Cl_spoiler_left">
+        <description>Left spoiler alone rolls left: 0.03 fully deployed</description>
+        <product>
+          <property>aero/qbar-psf</property>
+          <property>metrics/Sw-sqft</property>
+          <property>metrics/bw-ft</property>
+          <property>fcs/spoiler-left-pos-norm</property>
+          <value> -0.03 </value>
+        </product>
+      </function>
+
+      <function name="aero/coefficient/Cl_spoiler_right">
+        <description>Right spoiler alone rolls right</description>
+        <product>
+          <property>aero/qbar-psf</property>
+          <property>metrics/Sw-sqft</property>
+          <property>metrics/bw-ft</property>
+          <property>fcs/spoiler-right-pos-norm</property>
+          <value> 0.03 </value>
+        </product>
+      </function>
+
+      <function name="aero/coefficient/Cl_ruddervator_left">
+        <description>Left V-tail panel side force acts above the CG</description>
+        <product>
+          <property>aero/qbar-psf</property>
+          <property>metrics/Sw-sqft</property>
+          <property>metrics/bw-ft</property>
+          <property>fcs/ruddervator-left-pos-rad</property>
+          <value> 0.0063 </value>
+        </product>
+      </function>
+
+      <function name="aero/coefficient/Cl_ruddervator_right">
+        <description>Right V-tail panel side force acts above the CG</description>
+        <product>
+          <property>aero/qbar-psf</property>
+          <property>metrics/Sw-sqft</property>
+          <property>metrics/bw-ft</property>
+          <property>fcs/ruddervator-right-pos-rad</property>
+          <value> -0.0063 </value>
+        </product>
+      </function>
+  </axis>
+
+  <axis name="PITCH" frame="STABILITY">
+      <function name="aero/coefficient/Cm_alpha">
+        <description>Pitching moment vs alpha about the CG: Cm0 0.02, Cma -0.8/rad (static margin ~0.17)</description>
+        <product>
+          <property>aero/qbar-psf</property>
+          <property>metrics/Sw-sqft</property>
+          <property>metrics/cbarw-ft</property>
+          <table>
+            <independentVar lookup="row">aero/alpha-rad</independentVar>
+            <tableData>
+               -3.1416    0.4019
+               -1.5708    0.5812
+               -0.7854    0.4260
+               -0.5236    0.3513
+               -0.4363    0.3254
+               -0.3491    0.2993
+               -0.2618    0.2294
+               -0.2094    0.1876
+               -0.1745    0.1596
+               -0.1396    0.1317
+               -0.1047    0.1038
+               -0.0698    0.0759
+               -0.0349    0.0479
+                0.0000    0.0200
+                0.0349   -0.0079
+                0.0698   -0.0359
+                0.1047   -0.0638
+                0.1396   -0.0917
+                0.1745   -0.1196
+                0.1920   -0.1336
+                0.2094   -0.1476
+                0.2269   -0.1615
+                0.2443   -0.1755
+                0.2793   -0.2034
+                0.3142   -0.2313
+                0.3491   -0.2593
+                0.4363   -0.2854
+                0.5236   -0.3113
+                0.7854   -0.3860
+                1.5708   -0.5412
+                3.1416   -0.3619
+            </tableData>
+          </table>
+        </product>
+      </function>
+
+      <function name="aero/coefficient/Cm_q">
+        <description>Pitch damping, Cmq = -12</description>
+        <product>
+          <property>aero/qbar-psf</property>
+          <property>metrics/Sw-sqft</property>
+          <property>metrics/cbarw-ft</property>
+          <property>velocities/q-aero-rad_sec</property>
+          <property>aero/ci2vel</property>
+          <property>scale/pitch-damping</property>
+          <value> -12 </value>
+        </product>
+      </function>
+
+      <function name="aero/coefficient/Cm_alphadot">
+        <description>Pitch damping from downwash lag, Cmadot = -4</description>
+        <product>
+          <property>aero/qbar-psf</property>
+          <property>metrics/Sw-sqft</property>
+          <property>metrics/cbarw-ft</property>
+          <property>aero/alphadot-rad_sec</property>
+          <property>aero/ci2vel</property>
+          <property>scale/pitch-damping</property>
+          <value> -4 </value>
+        </product>
+      </function>
+
+      <function name="aero/coefficient/Cm_flap_left">
+        <description>Left flap: -0.05 Cm at 30 deg</description>
+        <product>
+          <property>aero/qbar-psf</property>
+          <property>metrics/Sw-sqft</property>
+          <property>metrics/cbarw-ft</property>
+          <property>fcs/flap-left-pos-rad</property>
+          <value> -0.0955 </value>
+        </product>
+      </function>
+
+      <function name="aero/coefficient/Cm_flap_right">
+        <description>Right flap: -0.05 Cm at 30 deg</description>
+        <product>
+          <property>aero/qbar-psf</property>
+          <property>metrics/Sw-sqft</property>
+          <property>metrics/cbarw-ft</property>
+          <property>fcs/flap-right-pos-rad</property>
+          <value> -0.0955 </value>
+        </product>
+      </function>
+
+      <function name="aero/coefficient/Cm_ruddervator_left">
+        <description>Left V-tail panel trailing edge down pitches nose down: 0.143/rad x 0.55 m / 0.25 m</description>
+        <product>
+          <property>aero/qbar-psf</property>
+          <property>metrics/Sw-sqft</property>
+          <property>metrics/cbarw-ft</property>
+          <property>fcs/ruddervator-left-pos-rad</property>
+          <property>scale/pitch-power</property>
+          <value> -0.315 </value>
+        </product>
+      </function>
+
+      <function name="aero/coefficient/Cm_ruddervator_right">
+        <description>Right V-tail panel trailing edge down pitches nose down</description>
+        <product>
+          <property>aero/qbar-psf</property>
+          <property>metrics/Sw-sqft</property>
+          <property>metrics/cbarw-ft</property>
+          <property>fcs/ruddervator-right-pos-rad</property>
+          <property>scale/pitch-power</property>
+          <value> -0.315 </value>
+        </product>
+      </function>
+  </axis>
+
+  <axis name="YAW" frame="STABILITY">
+      <function name="aero/coefficient/Cn_beta">
+        <description>Weathercock stability, Cnb = 0.08</description>
+        <product>
+          <property>aero/qbar-psf</property>
+          <property>metrics/Sw-sqft</property>
+          <property>metrics/bw-ft</property>
+          <property>aero/beta-rad</property>
+          <value> 0.08 </value>
+        </product>
+      </function>
+
+      <function name="aero/coefficient/Cn_p">
+        <description>Yaw due to roll rate, Cnp = -0.03</description>
+        <product>
+          <property>aero/qbar-psf</property>
+          <property>metrics/Sw-sqft</property>
+          <property>metrics/bw-ft</property>
+          <property>velocities/p-aero-rad_sec</property>
+          <property>aero/bi2vel</property>
+          <value> -0.03 </value>
+        </product>
+      </function>
+
+      <function name="aero/coefficient/Cn_r">
+        <description>Yaw damping, Cnr = -0.12</description>
+        <product>
+          <property>aero/qbar-psf</property>
+          <property>metrics/Sw-sqft</property>
+          <property>metrics/bw-ft</property>
+          <property>velocities/r-aero-rad_sec</property>
+          <property>aero/bi2vel</property>
+          <property>scale/yaw-damping</property>
+          <value> -0.12 </value>
+        </product>
+      </function>
+
+      <function name="aero/coefficient/Cn_aileron_left">
+        <description>Adverse yaw: left aileron down drags the left wing back</description>
+        <product>
+          <property>aero/qbar-psf</property>
+          <property>metrics/Sw-sqft</property>
+          <property>metrics/bw-ft</property>
+          <property>fcs/aileron-left-pos-rad</property>
+          <value> -0.012 </value>
+        </product>
+      </function>
+
+      <function name="aero/coefficient/Cn_aileron_right">
+        <description>Adverse yaw: right aileron down drags the right wing back</description>
+        <product>
+          <property>aero/qbar-psf</property>
+          <property>metrics/Sw-sqft</property>
+          <property>metrics/bw-ft</property>
+          <property>fcs/aileron-right-pos-rad</property>
+          <value> 0.012 </value>
+        </product>
+      </function>
+
+      <function name="aero/coefficient/Cn_spoiler_left">
+        <description>Left spoiler drag yaws left</description>
+        <product>
+          <property>aero/qbar-psf</property>
+          <property>metrics/Sw-sqft</property>
+          <property>metrics/bw-ft</property>
+          <property>fcs/spoiler-left-pos-norm</property>
+          <value> -0.005 </value>
+        </product>
+      </function>
+
+      <function name="aero/coefficient/Cn_spoiler_right">
+        <description>Right spoiler drag yaws right</description>
+        <product>
+          <property>aero/qbar-psf</property>
+          <property>metrics/Sw-sqft</property>
+          <property>metrics/bw-ft</property>
+          <property>fcs/spoiler-right-pos-norm</property>
+          <value> 0.005 </value>
+        </product>
+      </function>
+
+      <function name="aero/coefficient/Cn_ruddervator_left">
+        <description>Left V-tail panel trailing edge down yaws left: 0.100/rad x 0.55 m / 1.6 m</description>
+        <product>
+          <property>aero/qbar-psf</property>
+          <property>metrics/Sw-sqft</property>
+          <property>metrics/bw-ft</property>
+          <property>fcs/ruddervator-left-pos-rad</property>
+          <property>scale/yaw-power</property>
+          <value> -0.0345 </value>
+        </product>
+      </function>
+
+      <function name="aero/coefficient/Cn_ruddervator_right">
+        <description>Right V-tail panel trailing edge down yaws right</description>
+        <product>
+          <property>aero/qbar-psf</property>
+          <property>metrics/Sw-sqft</property>
+          <property>metrics/bw-ft</property>
+          <property>fcs/ruddervator-right-pos-rad</property>
+          <property>scale/yaw-power</property>
+          <value> 0.0345 </value>
+        </product>
+      </function>
+  </axis>
+
+</aerodynamics>

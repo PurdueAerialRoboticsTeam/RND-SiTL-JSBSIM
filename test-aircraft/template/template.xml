@@ -1,0 +1,46 @@
+<?xml version="1.0"?>
+<!--
+  Template fixed-wing aircraft for the JSON backend: V-tail, ailerons, flaps and spoilers with
+  one servo per surface, retractable tricycle gear (nose retract, nose steering, main retract),
+  wheel brakes, and an electric ducted fan (EDF).
+
+  EVERY NUMBER IN THESE FILES IS A PLACEHOLDER for a generic 2.5 kg, 1.6 m span aircraft.
+  README.md lists them and where to replace each from design data (XFLR5, CAD, EDF datasheet).
+
+  Axes: positions are in JSBSim's structural frame, metres from the nose:
+  x aft, y right, z up.
+-->
+<fdm_config name="template" version="2.0" release="ALPHA">
+
+  <fileheader>
+    <author>Purdue Aerial Robotics Team</author>
+    <description>Template fixed-wing UAV, V-tail, retractable gear, EDF. Placeholder data.</description>
+  </fileheader>
+
+  <metrics file="Metrics.xml"/>
+  <mass_balance file="Mass.xml"/>
+  <ground_reactions file="Gear.xml"/>
+  <system file="edf"/>
+  <flight_control file="FlightControl.xml"/>
+  <aerodynamics file="Aero.xml"/>
+
+  <!-- The EDF's thrust (Systems/edf.xml) acts along the fan axis at the fan's position. -->
+  <external_reactions>
+    <force name="edf" frame="BODY">
+      <function>
+        <property>edf/thrust-lbs</property>
+      </function>
+      <location unit="M">
+        <x> 0.80 </x>
+        <y> 0.00 </y>
+        <z> 0.00 </z>
+      </location>
+      <direction>
+        <x> 1 </x>
+        <y> 0 </y>
+        <z> 0 </z>
+      </direction>
+    </force>
+  </external_reactions>
+
+</fdm_config>

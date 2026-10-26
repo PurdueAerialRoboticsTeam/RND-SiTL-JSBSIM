@@ -1,0 +1,124 @@
+<?xml version="1.0"?>
+<!--
+  Ground contacts. PLACEHOLDERS: positions from CAD, springs and damping from the real gear.
+
+  The three wheels are retractable and are gear units 0, 1 and 2 in this order, which
+  FlightControl.xml relies on: unit 0 = nose wheel (SERVO10 retracts it), units 1 and 2 = mains
+  (SERVO11 retracts both). A wheel touches the ground only when it is fully down
+  (gear/unit[N]/pos-norm above 0.99).
+
+  Springs: each wheel compresses about 1 cm under its static load (2.5 kg, 17% on the nose
+  wheel, 83% on the mains), damping about half of critical.
+
+  The STRUCTURE contacts are the airframe: a wheels-up landing scrapes on them instead of the
+  aircraft sinking through the ground.
+-->
+<ground_reactions>
+
+  <contact type="BOGEY" name="NOSE_WHEEL">
+    <location unit="M">
+      <x> 0.20 </x>
+      <y> 0.00 </y>
+      <z> -0.15 </z>
+    </location>
+    <static_friction> 0.8 </static_friction>
+    <dynamic_friction> 0.5 </dynamic_friction>
+    <rolling_friction> 0.02 </rolling_friction>
+    <spring_coeff unit="N/M"> 800 </spring_coeff>
+    <damping_coeff unit="N/M/SEC"> 20 </damping_coeff>
+    <max_steer unit="DEG"> 20 </max_steer>          <!-- SERVO12, fcs/steer-cmd-norm -->
+    <brake_group> NONE </brake_group>
+    <retractable> 1 </retractable>
+  </contact>
+
+  <contact type="BOGEY" name="LEFT_MAIN">
+    <location unit="M">
+      <x> 0.56 </x>
+      <y> -0.15 </y>
+      <z> -0.15 </z>
+    </location>
+    <static_friction> 0.8 </static_friction>
+    <dynamic_friction> 0.5 </dynamic_friction>
+    <rolling_friction> 0.02 </rolling_friction>
+    <spring_coeff unit="N/M"> 1500 </spring_coeff>
+    <damping_coeff unit="N/M/SEC"> 40 </damping_coeff>
+    <max_steer unit="DEG"> 0 </max_steer>
+    <brake_group> LEFT </brake_group>               <!-- SERVO13, fcs/left-brake-cmd-norm -->
+    <retractable> 1 </retractable>
+  </contact>
+
+  <contact type="BOGEY" name="RIGHT_MAIN">
+    <location unit="M">
+      <x> 0.56 </x>
+      <y> 0.15 </y>
+      <z> -0.15 </z>
+    </location>
+    <static_friction> 0.8 </static_friction>
+    <dynamic_friction> 0.5 </dynamic_friction>
+    <rolling_friction> 0.02 </rolling_friction>
+    <spring_coeff unit="N/M"> 1500 </spring_coeff>
+    <damping_coeff unit="N/M/SEC"> 40 </damping_coeff>
+    <max_steer unit="DEG"> 0 </max_steer>
+    <brake_group> RIGHT </brake_group>              <!-- SERVO13, fcs/right-brake-cmd-norm -->
+    <retractable> 1 </retractable>
+  </contact>
+
+  <!-- airframe -->
+  <contact type="STRUCTURE" name="NOSE_TIP">
+    <location unit="M"> <x> 0.00 </x> <y> 0.00 </y> <z> -0.05 </z> </location>
+    <static_friction> 0.8 </static_friction>
+    <dynamic_friction> 0.6 </dynamic_friction>
+    <spring_coeff unit="N/M"> 5000 </spring_coeff>
+    <damping_coeff unit="N/M/SEC"> 200 </damping_coeff>
+  </contact>
+  <contact type="STRUCTURE" name="BELLY_FWD">
+    <location unit="M"> <x> 0.30 </x> <y> 0.00 </y> <z> -0.08 </z> </location>
+    <static_friction> 0.8 </static_friction>
+    <dynamic_friction> 0.6 </dynamic_friction>
+    <spring_coeff unit="N/M"> 5000 </spring_coeff>
+    <damping_coeff unit="N/M/SEC"> 200 </damping_coeff>
+  </contact>
+  <contact type="STRUCTURE" name="BELLY_AFT">
+    <location unit="M"> <x> 0.85 </x> <y> 0.00 </y> <z> -0.07 </z> </location>
+    <static_friction> 0.8 </static_friction>
+    <dynamic_friction> 0.6 </dynamic_friction>
+    <spring_coeff unit="N/M"> 5000 </spring_coeff>
+    <damping_coeff unit="N/M/SEC"> 200 </damping_coeff>
+  </contact>
+  <contact type="STRUCTURE" name="TAIL">
+    <location unit="M"> <x> 1.20 </x> <y> 0.00 </y> <z> -0.03 </z> </location>
+    <static_friction> 0.8 </static_friction>
+    <dynamic_friction> 0.6 </dynamic_friction>
+    <spring_coeff unit="N/M"> 5000 </spring_coeff>
+    <damping_coeff unit="N/M/SEC"> 200 </damping_coeff>
+  </contact>
+  <contact type="STRUCTURE" name="LEFT_WINGTIP">
+    <location unit="M"> <x> 0.55 </x> <y> -0.80 </y> <z> 0.00 </z> </location>
+    <static_friction> 0.8 </static_friction>
+    <dynamic_friction> 0.6 </dynamic_friction>
+    <spring_coeff unit="N/M"> 5000 </spring_coeff>
+    <damping_coeff unit="N/M/SEC"> 200 </damping_coeff>
+  </contact>
+  <contact type="STRUCTURE" name="RIGHT_WINGTIP">
+    <location unit="M"> <x> 0.55 </x> <y> 0.80 </y> <z> 0.00 </z> </location>
+    <static_friction> 0.8 </static_friction>
+    <dynamic_friction> 0.6 </dynamic_friction>
+    <spring_coeff unit="N/M"> 5000 </spring_coeff>
+    <damping_coeff unit="N/M/SEC"> 200 </damping_coeff>
+  </contact>
+  <contact type="STRUCTURE" name="LEFT_VTAIL_TIP">
+    <location unit="M"> <x> 1.15 </x> <y> -0.16 </y> <z> 0.12 </z> </location>
+    <static_friction> 0.8 </static_friction>
+    <dynamic_friction> 0.6 </dynamic_friction>
+    <spring_coeff unit="N/M"> 5000 </spring_coeff>
+    <damping_coeff unit="N/M/SEC"> 200 </damping_coeff>
+  </contact>
+  <contact type="STRUCTURE" name="RIGHT_VTAIL_TIP">
+    <location unit="M"> <x> 1.15 </x> <y> 0.16 </y> <z> 0.12 </z> </location>
+    <static_friction> 0.8 </static_friction>
+    <dynamic_friction> 0.6 </dynamic_friction>
+    <spring_coeff unit="N/M"> 5000 </spring_coeff>
+    <damping_coeff unit="N/M/SEC"> 200 </damping_coeff>
+  </contact>
+
+</ground_reactions>

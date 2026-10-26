@@ -1,0 +1,37 @@
+<?xml version="1.0"?>
+<!--
+  Mass and inertia. PLACEHOLDERS: replace with CAD mass properties, then with a weigh-and-balance
+  and an inertia swing test of the built aircraft.
+
+  Total 2.5 kg: airframe 1.7 kg (everything except battery and payload) + battery 0.6 kg +
+  payload 0.2 kg. The airframe CG is placed so the total CG lands on AERORP (x = 0.50 m).
+  Inertias are about the total CG, airframe only; JSBSim adds the point masses' share.
+-->
+<mass_balance negated_crossproduct_inertia="true">
+  <ixx unit="KG*M2"> 0.15 </ixx>
+  <iyy unit="KG*M2"> 0.20 </iyy>
+  <izz unit="KG*M2"> 0.33 </izz>
+  <ixz unit="KG*M2"> 0.00 </ixz>
+  <emptywt unit="KG"> 1.70 </emptywt>
+  <location name="CG" unit="M">
+    <x> 0.512 </x>
+    <y> 0.000 </y>
+    <z> 0.000 </z>
+  </location>
+  <pointmass name="BATTERY">
+    <weight unit="KG"> 0.60 </weight>
+    <location name="POINTMASS" unit="M">
+      <x> 0.45 </x>
+      <y> 0.00 </y>
+      <z> 0.00 </z>
+    </location>
+  </pointmass>
+  <pointmass name="PAYLOAD">
+    <weight unit="KG"> 0.20 </weight>
+    <location name="POINTMASS" unit="M">
+      <x> 0.55 </x>
+      <y> 0.00 </y>
+      <z> -0.02 </z>
+    </location>
+  </pointmass>
+</mass_balance>

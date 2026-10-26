@@ -10,10 +10,11 @@ there).
 |---|---|---|---|
 | `c172p` | Cessna 172P: four-seat piston trainer, nose wheel, flaps 0/10/20/30° | SERVO1 aileron, SERVO2 elevator, SERVO3 throttle, SERVO4 rudder and nose wheel, SERVO5 flaps | `c172p/firmwares/ardupilot_c172p.param` |
 | `advanced_plane` | PX4's small electric test plane (1.2 kg, 1.5 m span), tractor propeller, wheels | SERVO1 ailerons, SERVO2 elevator, SERVO3 throttle, SERVO4 rudder | `advanced_plane/firmwares/ardupilot_advanced_plane.param` |
+| `template` | Template for the team aircraft: V-tail, ailerons, flaps and spoilers per side, retractable gear, wheel brakes, EDF. Placeholder numbers | SERVO1-13, one per surface or gear servo (see `template/README.md`) | `template/firmwares/ardupilot_template.param` |
 
 ## Where they come from
 
-Copied from [PteroSimAircrafts](https://github.com/PteroLabsAI/PteroSimAircrafts)
+`template` was written for this repository. The others are copied from [PteroSimAircrafts](https://github.com/PteroLabsAI/PteroSimAircrafts)
 commit `3aad5cc` (2026-10-22), without `meshes/` (3D models for PteroSim's
 renderer; JSBSim does not read them, and the c172p's are 29 MB). Each folder
 keeps its `LICENSE` and `NOTICE`: the c172p is GPL v2 (its JSBSim flight

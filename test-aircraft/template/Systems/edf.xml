@@ -1,0 +1,79 @@
+<?xml version="1.0"?>
+<!--
+  Electric ducted fan, simple momentum model. JSBSim has no ducted-fan engine, and a propeller
+  table without data for airspeed makes thrust that never falls off (advanced_plane's problem),
+  so thrust is computed here and applied in template.xml as an external force.
+
+    fan    = throttle through a first-order lag (spool-up and spool-down time)
+    thrust = static thrust x fraction(fan) x max(0, 1 - forward airspeed / exhaust speed)
+
+  The last term is momentum theory for a fixed exhaust speed: the fan adds less momentum to air
+  that already arrives fast. Three numbers to replace from the EDF's datasheet or a thrust stand
+  (PLACEHOLDERS for a 70 mm, 6S fan):
+
+    edf/static-thrust-lbs     4.41 lbf = 19.6 N = 2.0 kgf static thrust at full throttle
+    edf/exhaust-velocity-fps  196.85 ft/s = 60 m/s; datasheets give it as "efflux speed"
+    spool time constant       0.3 s, as c1 = 1 / 0.3 in the lag filter below
+
+  The thrust-fraction table is roughly throttle squared (thrust goes with fan speed squared,
+  fan speed roughly with throttle); replace it with thrust-stand points if you have them.
+
+  Thrust is in lbf because JSBSim external forces are in pounds-force.
+-->
+<system name="EDF">
+
+  <property value="4.41">edf/static-thrust-lbs</property>
+  <property value="196.85">edf/exhaust-velocity-fps</property>
+  <property value="45000">edf/max-rpm</property>
+
+  <channel name="EDF">
+
+    <lag_filter name="edf/fan">
+      <input>fcs/edf-throttle-cmd-norm</input>
+      <c1> 3.333 </c1>
+      <clipto> <min> 0 </min> <max> 1 </max> </clipto>
+      <output>edf/fan-norm</output>
+    </lag_filter>
+
+    <fcs_function name="edf/thrust">
+      <function>
+        <product>
+          <property>edf/static-thrust-lbs</property>
+          <table>
+            <independentVar>edf/fan-norm</independentVar>
+            <tableData>
+              0.00  0.00
+              0.25  0.07
+              0.50  0.27
+              0.75  0.58
+              1.00  1.00
+            </tableData>
+          </table>
+          <max>
+            <value> 0 </value>
+            <difference>
+              <value> 1 </value>
+              <quotient>
+                <property>velocities/u-aero-fps</property>
+                <property>edf/exhaust-velocity-fps</property>
+              </quotient>
+            </difference>
+          </max>
+        </product>
+      </function>
+      <output>edf/thrust-lbs</output>
+    </fcs_function>
+
+    <!-- fan speed, for telemetry (and the motor-vibration model in the tuning plan) -->
+    <fcs_function name="edf/rpm">
+      <function>
+        <product>
+          <property>edf/fan-norm</property>
+          <property>edf/max-rpm</property>
+        </product>
+      </function>
+      <output>edf/rpm</output>
+    </fcs_function>
+
+  </channel>
+</system>

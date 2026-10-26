@@ -1,0 +1,33 @@
+<?xml version="1.0"?>
+<!--
+  ArduPlane servo outputs to the template's inputs (FlightControl.xml), one per surface or gear
+  servo. channel = SERVOn - 1. SERVOn_FUNCTION for each is in firmwares/ardupilot_template.param.
+
+  Signs. Every surface input is +1 = trailing edge down. ArduPlane, with SERVOn_REVERSED 0:
+    aileron (4)       above 1500 = roll right: left aileron down, right aileron up
+    V-tail (79, 80)   above 1500 = trailing edge up (ArduPlane's mixer: "non-reversed servos go up")
+    flap (3)          1000..2000 = retracted..full
+    airbrake (110)    1000..2000 = stowed..full (from RC6, RC6_OPTION 210)
+    landing gear (29) SERVOn_MIN = retracted, SERVOn_MAX = deployed
+    steering (26)     above 1500 = steer right
+  so the right aileron and both ruddervators are inverted here. All rows are property rows, so
+  none of the elevator/rudder mirroring of typed rows applies.
+
+  Servo speed: each row's lag (default 0.14 s, the bridge's servo-lag option) is that servo's time
+  constant. A gear leg follows its retract servo's PWM through it.
+-->
+<control_bindings stack="ArduPilot">
+  <binding stack="ArduPilot" channel="0"  property="fcs/aileron-left-cmd-norm"      in="-1 1" out="-1 1" label="left aileron"/>
+  <binding stack="ArduPilot" channel="1"  property="fcs/aileron-right-cmd-norm"     in="-1 1" out="-1 1" invert="1" label="right aileron"/>
+  <binding stack="ArduPilot" channel="2"  property="fcs/edf-throttle-cmd-norm"      in="0 1"  out="0 1"  label="EDF throttle"/>
+  <binding stack="ArduPilot" channel="3"  property="fcs/ruddervator-left-cmd-norm"  in="-1 1" out="-1 1" invert="1" label="left ruddervator"/>
+  <binding stack="ArduPilot" channel="4"  property="fcs/ruddervator-right-cmd-norm" in="-1 1" out="-1 1" invert="1" label="right ruddervator"/>
+  <binding stack="ArduPilot" channel="5"  property="fcs/flap-left-cmd-norm"         in="0 1"  out="0 1"  label="left flap"/>
+  <binding stack="ArduPilot" channel="6"  property="fcs/flap-right-cmd-norm"        in="0 1"  out="0 1"  label="right flap"/>
+  <binding stack="ArduPilot" channel="7"  property="fcs/spoiler-left-cmd-norm"      in="0 1"  out="0 1"  label="left spoiler"/>
+  <binding stack="ArduPilot" channel="8"  property="fcs/spoiler-right-cmd-norm"     in="0 1"  out="0 1"  label="right spoiler"/>
+  <binding stack="ArduPilot" channel="9"  property="fcs/gear-nose-cmd-norm"         in="0 1"  out="0 1"  label="nose gear retract"/>
+  <binding stack="ArduPilot" channel="10" property="fcs/gear-main-cmd-norm"         in="0 1"  out="0 1"  label="main gear retract"/>
+  <binding stack="ArduPilot" channel="11" type="Steering"                           in="-1 1" out="-1 1" label="nose wheel steering"/>
+  <binding stack="ArduPilot" channel="12" type="Brake"                              in="0 1"  out="0 1"  label="wheel brakes (RC7 passthrough)"/>
+</control_bindings>

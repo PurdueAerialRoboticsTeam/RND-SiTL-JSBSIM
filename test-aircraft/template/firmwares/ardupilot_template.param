@@ -1,0 +1,92 @@
+# ArduPlane parameters for the template aircraft, on top of Tools/autotest/models/plane.parm.
+# The Docker entrypoint loads this automatically with SIM_BACKEND=json JSBSIM_MODEL=template.
+# PLACEHOLDERS like the model: airspeeds and throttle follow from the model's placeholder data.
+
+# ---- outputs: one per surface or gear servo (Controls.xml), full 1000..2000 range
+SERVO1_FUNCTION 4
+SERVO2_FUNCTION 4
+SERVO3_FUNCTION 70
+SERVO4_FUNCTION 79
+SERVO5_FUNCTION 80
+SERVO6_FUNCTION 3
+SERVO7_FUNCTION 3
+SERVO8_FUNCTION 110
+SERVO9_FUNCTION 110
+SERVO10_FUNCTION 29
+SERVO11_FUNCTION 29
+SERVO12_FUNCTION 26
+# wheel brakes follow RC7 directly (RC passthrough, 57 = RCIN7): 1000 off .. 2000 full
+SERVO13_FUNCTION 57
+SERVO1_MIN 1000
+SERVO1_MAX 2000
+SERVO1_TRIM 1500
+SERVO2_MIN 1000
+SERVO2_MAX 2000
+SERVO2_TRIM 1500
+SERVO3_MIN 1000
+SERVO3_MAX 2000
+SERVO4_MIN 1000
+SERVO4_MAX 2000
+SERVO4_TRIM 1500
+SERVO5_MIN 1000
+SERVO5_MAX 2000
+SERVO5_TRIM 1500
+SERVO6_MIN 1000
+SERVO6_MAX 2000
+SERVO7_MIN 1000
+SERVO7_MAX 2000
+SERVO8_MIN 1000
+SERVO8_MAX 2000
+SERVO9_MIN 1000
+SERVO9_MAX 2000
+SERVO10_MIN 1000
+SERVO10_MAX 2000
+SERVO11_MIN 1000
+SERVO11_MAX 2000
+SERVO12_MIN 1000
+SERVO12_MAX 2000
+SERVO12_TRIM 1500
+RC7_MIN 1000
+RC7_MAX 2000
+RC7_TRIM 1000
+
+# ---- V-tail: ArduPlane's mixer halves each input so pitch and yaw together never saturate
+MIXING_GAIN 0.5
+
+# ---- landing gear: down at boot, up when the takeoff completes, down for landing (LGR_OPTIONS 3)
+LGR_ENABLE 1
+LGR_STARTUP 2
+LGR_OPTIONS 3
+
+# ---- flaps: half for takeoff, full for landing, 30 %/s
+TKOFF_FLAP_PCNT 50
+LAND_FLAP_PERCNT 100
+FLAP_SLEWRATE 30
+
+# ---- airbrakes (spoilers) follow RC6 (RCx_OPTION 210 = manual airbrake): 1000 stowed .. 2000 full.
+# ArduPlane's automatic airbrakes need THR_MIN below zero, which also turns on reverse thrust
+# (throttle centred on 1500); an EDF cannot reverse, so they stay manual.
+RC6_OPTION 210
+RC6_MIN 1000
+RC6_MAX 2000
+RC6_TRIM 1000
+
+# ---- airspeed: the JSON airspeed field is read by the SITL sensor type
+ARSPD_TYPE 100
+ARSPD_USE 1
+# stall ~9.4 m/s clean, ~8.1 m/s with full flaps (2.5 kg, 0.40 m2, CLmax 1.2, +0.4 with flaps)
+AIRSPEED_MIN 13
+AIRSPEED_CRUISE 18
+AIRSPEED_MAX 28
+# about 45 % throttle holds 18 m/s with the placeholder EDF and drag
+TRIM_THROTTLE 45
+
+# ---- takeoff and landing
+TKOFF_THR_MAX 100
+TKOFF_ROTATE_SPD 12
+TKOFF_GND_PITCH 2
+GROUND_STEER_ALT 5
+TECS_LAND_ARSPD 14
+LAND_FLARE_ALT 3
+LAND_PITCH_DEG 2
+LAND_DISARMDELAY 10

@@ -74,26 +74,45 @@ JSBSIM_MODEL="${JSBSIM_MODEL:-$([[ "${FRAME}" == *:* ]] && echo "${FRAME#*:}" ||
 JSBSIM_AIRCRAFT_DIR="${JSBSIM_AIRCRAFT_DIR:-}"  # folder holding <model>/<model>.xml; default test-aircraft, then Tools/autotest/aircraft
 JSBSIM_CONTROLS="${JSBSIM_CONTROLS:-}"          # Controls.xml; default the model's own, else SERVO1..4
 JSON_FRAME="${JSON_FRAME:-}"                    # base parameters: jsbsim-json (plane-jsbsim.parm) | plane (models/plane.parm)
+PARAM_SET="${PARAM_SET:-}"                      # firmwares/ardupilot_<model>-<set>.param instead of ardupilot_<model>.param
 PARAM_FILES="${PARAM_FILES:-}"                  # comma separated parameter files added on top
 BRIDGE_ARGS="${BRIDGE_ARGS:-}"                  # extra bridge options, see jsbsim_json_bridge.py --help
 
 # An aircraft that ships its own ArduPilot parameters, as PteroSimAircrafts'
-# do in firmwares/ardupilot_<model>.param, flies with them on top of
-# models/plane.parm, the base they are written for, unless told otherwise.
-if [ "${SIM_BACKEND:-}" = "json" ] && [ -z "${JSON_FRAME}" ] && [ -z "${PARAM_FILES}" ]; then
+# do in firmwares/, flies with them on top of models/plane.parm, the base they
+# are written for (JSON_FRAME overrides the base). The default set is
+# firmwares/ardupilot_<model>.param; PARAM_SET=<set> picks
+# firmwares/ardupilot_<model>-<set>.param instead. PARAM_FILES are added on top.
+param_set_file=""
+if [ "${SIM_BACKEND:-}" = "json" ]; then
+  model_dir=""
   for d in ${JSBSIM_AIRCRAFT_DIR:-test-aircraft Tools/autotest/aircraft}; do
     [[ "${d}" = /* ]] || d="${AP_DIR}/${d}"
     if [ -f "${d}/${JSBSIM_MODEL}/${JSBSIM_MODEL}.xml" ]; then
-      own="${d}/${JSBSIM_MODEL}/firmwares/ardupilot_${JSBSIM_MODEL}.param"
-      if [ -f "${own}" ]; then
-        JSON_FRAME=plane
-        PARAM_FILES="${own}"
-      fi
+      model_dir="${d}/${JSBSIM_MODEL}"
       break
     fi
   done
+  if [ -n "${PARAM_SET}" ]; then
+    param_set_file="${model_dir}/firmwares/ardupilot_${JSBSIM_MODEL}-${PARAM_SET}.param"
+    if [ -z "${model_dir}" ] || [ ! -f "${param_set_file}" ]; then
+      echo "FATAL: PARAM_SET=${PARAM_SET}, but there is no firmwares/ardupilot_${JSBSIM_MODEL}-${PARAM_SET}.param for ${JSBSIM_MODEL}." >&2
+      sets="$(cd "${model_dir}/firmwares" 2>/dev/null && ls ardupilot_"${JSBSIM_MODEL}"-*.param 2>/dev/null \
+              | sed -e "s/^ardupilot_${JSBSIM_MODEL}-//" -e 's/\.param$//' | tr '\n' ' ' || true)"
+      echo "       Parameter sets for ${JSBSIM_MODEL}: ${sets:-none (only the default set, used without PARAM_SET)}" >&2
+      exit 1
+    fi
+  elif [ -n "${model_dir}" ] && [ -f "${model_dir}/firmwares/ardupilot_${JSBSIM_MODEL}.param" ]; then
+    param_set_file="${model_dir}/firmwares/ardupilot_${JSBSIM_MODEL}.param"
+  fi
+  if [ -n "${param_set_file}" ]; then
+    JSON_FRAME="${JSON_FRAME:-plane}"
+    PARAM_FILES="${param_set_file}${PARAM_FILES:+,${PARAM_FILES}}"
+  fi
 fi
 JSON_FRAME="${JSON_FRAME:-jsbsim-json}"
+param_set_desc="none"
+[ -n "${param_set_file}" ] && param_set_desc="${PARAM_SET:-default} (${param_set_file#"${AP_DIR}"/})"
 
 SIM_VEHICLE="${AP_DIR}/Tools/autotest/sim_vehicle.py"
 
@@ -199,6 +218,7 @@ vehicle     : ${VEHICLE}
 backend     : ${SIM_BACKEND}
 aircraft    : ${JSBSIM_MODEL}
 frame       : ${sim_frame}
+param set   : ${param_set_desc}
 param files : ${PARAM_FILES:-none}
 location    : ${CUSTOM_LOCATION:-${LOCATION}}
 speedup     : ${SPEEDUP}
@@ -212,6 +232,7 @@ cat <<EOF
    vehicle    : ${VEHICLE}
    backend    : ${SIM_BACKEND}$([ "${SIM_BACKEND}" = "json" ] && echo " (aircraft ${JSBSIM_MODEL}, frame ${sim_frame}${PARAM_FILES:+, params ${PARAM_FILES}})")
    frame      : ${sim_frame}
+   param set  : ${param_set_desc}
    location   : ${CUSTOM_LOCATION:-${LOCATION}}
    speedup    : ${SPEEDUP}x
    run dir    : ${RUN_DIR} (sitl-docker/work on the host)

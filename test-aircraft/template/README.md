@@ -30,6 +30,9 @@ Tools/autotest/sim_vehicle.py -v ArduPlane --frame plane --model JSON:127.0.0.1 
   --add-param-file test-aircraft/template/firmwares/ardupilot_template.param
 ```
 
+Other parameter sets for it go in `firmwares/` as
+`ardupilot_template-<set>.param`, chosen with `-e PARAM_SET=<set>`.
+
 Two RC channels are used directly; keep both at 1000 for normal flight:
 
 - **RC6**: spoilers (airbrake, `RC6_OPTION 210`), 1000 stowed to 2000 full.

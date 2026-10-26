@@ -37,6 +37,9 @@ docker compose run --rm --service-ports -e SIM_BACKEND=json -e JSBSIM_MODEL=adva
 
 The entrypoint finds the aircraft here and flies it with its own
 `firmwares/ardupilot_<model>.param` on top of `Tools/autotest/models/plane.parm`.
+Other parameter sets can sit beside it as `firmwares/ardupilot_<model>-<set>.param`
+and are chosen with `-e PARAM_SET=<set>` (see "Parameter sets" in
+`sitl-docker/README.md`).
 
 Natively, from the repository root (two terminals):
 

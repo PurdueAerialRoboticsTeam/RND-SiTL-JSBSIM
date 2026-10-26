@@ -32,8 +32,9 @@ services:
       # JSBSIM_MODEL: c172p              # test-aircraft/ or Tools/autotest/aircraft/; default Rascal
       # JSBSIM_AIRCRAFT_DIR: path        # another folder holding <model>/<model>.xml
       # JSBSIM_CONTROLS: path            # default: the model's own Controls.xml
+      # PARAM_SET: tuning               # firmwares/ardupilot_<model>-tuning.param instead of the default set
       # JSON_FRAME: plane                # base params; default plane if the model has its own
-      # PARAM_FILES: a.param,b.param     # default: the model's firmwares/ardupilot_<model>.param
+      # PARAM_FILES: a.param,b.param     # extra files on top of the base and the set
       # BRIDGE_ARGS: "--servo-lag 0"     # extra bridge options
 
       # 3D view: set to the host running FlightGear. Resolved to an IP by the

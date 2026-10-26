@@ -159,14 +159,31 @@ docker compose run --rm --service-ports -e SIM_BACKEND=json -e JSBSIM_MODEL=adva
 What each aircraft is, what was tested and its known limits are in
 `test-aircraft/README.md`. VTOL aircraft are not supported yet.
 
+**Parameter sets.** Each test aircraft keeps its ArduPilot parameter files in
+its `firmwares/` folder. `firmwares/ardupilot_<model>.param` is the default
+set; more sets sit beside it as `firmwares/ardupilot_<model>-<set>.param`
+and are chosen by name:
+
+```bash
+docker compose run --rm --service-ports -e SIM_BACKEND=json -e JSBSIM_MODEL=c172p -e PARAM_SET=tuning sitl
+```
+
+loads `test-aircraft/c172p/firmwares/ardupilot_c172p-tuning.param` *instead
+of* the default set (so a set file is complete, not a list of changes). An
+unknown set name stops with a list of the sets that exist. The base is
+always `models/plane.parm` for an aircraft with its own parameter files, and
+`PARAM_FILES` adds files on top for one-off changes. The banner and the
+run's `run.txt` say which set was loaded.
+
 | Variable | Default | |
 |---|---|---|
 | `SIM_BACKEND` | `jsbsim` | `json` for the bridge |
 | `JSBSIM_MODEL` | model in `FRAME`, else `Rascal` | aircraft name, looked for in `test-aircraft/` then `Tools/autotest/aircraft/` |
 | `JSBSIM_AIRCRAFT_DIR` | those two folders | another folder holding `<model>/<model>.xml` |
 | `JSBSIM_CONTROLS` | the model's own `Controls.xml`, else SERVO1..4 | bindings file |
-| `JSON_FRAME` | `plane` if the model has `firmwares/ardupilot_<model>.param`, else `jsbsim-json` | base parameters: `jsbsim-json` (`plane-jsbsim.parm`, for the Rascal) or `plane` (`models/plane.parm`) |
-| `PARAM_FILES` | the model's `firmwares/ardupilot_<model>.param`, if any | parameter files added on top, comma separated |
+| `PARAM_SET` | the default set | picks `firmwares/ardupilot_<model>-<set>.param` instead of `firmwares/ardupilot_<model>.param` (see below) |
+| `JSON_FRAME` | `plane` if the model has its own parameter files, else `jsbsim-json` | base parameters: `jsbsim-json` (`plane-jsbsim.parm`, for the Rascal) or `plane` (`models/plane.parm`) |
+| `PARAM_FILES` | none | extra parameter files added on top of the base and the set, comma separated |
 | `BRIDGE_ARGS` | none | extra bridge options (`jsbsim_json_bridge.py --help`) |
 
 Relative paths are relative to the repository. Do not mix `plane-jsbsim.parm`

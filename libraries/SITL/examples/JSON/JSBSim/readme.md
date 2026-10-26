@@ -12,8 +12,8 @@ Servo outputs are bound to JSBSim properties by the aircraft's
 `Controls.xml`, in the [PteroSimAircrafts](https://github.com/PteroLabsAI/PteroSimAircrafts)
 format (`controls.py`; rules in the plan's section 5). An aircraft without one,
 such as the Rascal, gets SERVO1..4 on aileron, elevator, throttle and rudder,
-exactly like the `jsbsim` frame. PteroSimAircrafts' fixed-wing aircraft are
-covered in `pterosim/README.md`.
+exactly like the `jsbsim` frame. Fixed-wing test aircraft with more outputs
+are in `test-aircraft/` at the repository root (see its README).
 
 ## Requirements
 
@@ -45,13 +45,13 @@ Options (`--help` for all):
 | Option | Default | |
 |---|---|---|
 | `--aircraft` | `Rascal` | model name |
-| `--aircraft-dir` | `Tools/autotest/aircraft` | folder holding `<aircraft>/<aircraft>.xml`, e.g. a PteroSimAircrafts checkout |
+| `--aircraft-dir` | `test-aircraft/`, then `Tools/autotest/aircraft/` | folder holding `<aircraft>/<aircraft>.xml` |
 | `--controls` | the aircraft's `Controls.xml` | another bindings file, or `none` for the built-in SERVO1..4 |
 | `--location` / `--home` | `CMAC` | name from `Tools/autotest/locations.txt`, or `lat,lng,alt,heading` |
 | `--port` | `9002` | UDP port SITL sends servo packets to |
 | `--servo-lag` | `0.14` | servo time constant in seconds, as `SIM_SERVO_SPEED`, for rows without `lag=`; `0` disables |
 | `--start-engines` | off | start every engine at reset; otherwise a `Motor` row starts its engine on the first throttle above 1% |
-| `--agl`, `--pitch` | `1.3`, `13` | initial height above ground (m) and pitch (deg), as the `jsbsim` frame |
+| `--agl`, `--pitch` | `0.5`, `0` | start height (m) and pitch (deg) before JSBSim's ground trim settles the aircraft on its gear; a nose-up start crashes the trim for the c172p |
 | `--stats` | `10` | seconds between timing reports; `0` disables |
 
 ## How it works

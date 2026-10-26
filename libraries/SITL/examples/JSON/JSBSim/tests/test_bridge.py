@@ -153,3 +153,10 @@ def test_rascal_reset_restarts_time(rascal):
         bridge.handle(parse_servo_packet(build_servo_packet(1200, n, pwm)))
     msg = json.loads(bridge.handle(parse_servo_packet(build_servo_packet(1200, 0, pwm))).decode())
     assert msg['timestamp'] == pytest.approx(1.0 / 1200)
+
+
+def test_aircraft_are_found_in_test_aircraft_then_autotest():
+    assert jb.find_aircraft_dir('c172p') == jb.AIRCRAFT_SEARCH[0]
+    assert jb.find_aircraft_dir('advanced_plane') == jb.AIRCRAFT_SEARCH[0]
+    assert jb.find_aircraft_dir('Rascal') == jb.AIRCRAFT_SEARCH[1]
+    assert jb.find_aircraft_dir('NoSuchPlane') is None

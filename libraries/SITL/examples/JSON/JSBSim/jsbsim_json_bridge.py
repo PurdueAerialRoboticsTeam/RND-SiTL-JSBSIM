@@ -38,6 +38,16 @@ from sitl_protocol import (
 FT_TO_M = 0.3048
 REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), *(['..'] * 5)))
 DEFAULT_ROOT = os.path.join(REPO_ROOT, 'Tools', 'autotest')
+# where --aircraft is looked for when --aircraft-dir is not given, in order
+AIRCRAFT_SEARCH = (os.path.join(REPO_ROOT, 'test-aircraft'), os.path.join(DEFAULT_ROOT, 'aircraft'))
+
+
+def find_aircraft_dir(aircraft, search=AIRCRAFT_SEARCH):
+    '''the first folder in search holding <aircraft>/<aircraft>.xml, or None'''
+    for d in search:
+        if os.path.exists(os.path.join(d, aircraft, aircraft + '.xml')):
+            return d
+    return None
 
 
 def default_rows(lag):
@@ -272,7 +282,8 @@ def find_controls(args, aircraft_dir):
 def main():
     parser = argparse.ArgumentParser(description=__doc__.split('\n\n')[0])
     parser.add_argument('--aircraft', default='Rascal', help='JSBSim aircraft name')
-    parser.add_argument('--aircraft-dir', help='folder holding <aircraft>/<aircraft>.xml (default: <root>/aircraft)')
+    parser.add_argument('--aircraft-dir', help='folder holding <aircraft>/<aircraft>.xml '
+                        '(default: test-aircraft, then Tools/autotest/aircraft)')
     parser.add_argument('--root', default=DEFAULT_ROOT, help='JSBSim root directory (default: %(default)s)')
     parser.add_argument('--controls', help='Controls.xml to use (default: the aircraft\'s own, if any); '
                         '"none" for the built-in SERVO1..4 bindings')
@@ -281,8 +292,10 @@ def main():
     home.add_argument('--home', help='lat,lng,alt,heading; overrides --location')
     parser.add_argument('--bind', default='127.0.0.1', help='address to listen on')
     parser.add_argument('--port', type=int, default=9002, help='UDP port SITL sends servo packets to')
-    parser.add_argument('--agl', type=float, default=1.3, help='initial height above ground, m')
-    parser.add_argument('--pitch', type=float, default=13.0, help='initial pitch, deg')
+    # JSBSim's ground trim settles every aircraft onto its gear from a level
+    # start; a nose-up start (the jsbsim frame's 13 deg) crashes it for the c172p
+    parser.add_argument('--agl', type=float, default=0.5, help='initial height above ground before ground trim, m')
+    parser.add_argument('--pitch', type=float, default=0.0, help='initial pitch before ground trim, deg')
     parser.add_argument('--servo-lag', type=float, default=0.14,
                         help='servo time constant, s, as SIM_SERVO_SPEED, for rows without lag=; 0 disables')
     parser.add_argument('--start-engines', action='store_true',
@@ -293,7 +306,13 @@ def main():
     # keep log lines in order with SITL's when both go to one file or docker log
     sys.stdout.reconfigure(line_buffering=True)
 
-    aircraft_dir = os.path.abspath(args.aircraft_dir) if args.aircraft_dir else os.path.join(args.root, 'aircraft')
+    if args.aircraft_dir:
+        aircraft_dir = os.path.abspath(args.aircraft_dir)
+    else:
+        aircraft_dir = find_aircraft_dir(args.aircraft)
+        if aircraft_dir is None:
+            print("bridge: aircraft %s not found in %s" % (args.aircraft, ' or '.join(AIRCRAFT_SEARCH)))
+            return 1
     controls_path = find_controls(args, aircraft_dir)
     warnings = []
     if controls_path is None:
@@ -307,7 +326,7 @@ def main():
 
     home_pos = parse_home(args.home) if args.home else read_location(args.location, DEFAULT_ROOT)
     model = JSBSimModel(args.root, args.aircraft, home_pos, args.agl, args.pitch,
-                        aircraft_dir=args.aircraft_dir and aircraft_dir,
+                        aircraft_dir=aircraft_dir,
                         start_engines=controls_path is None or args.start_engines,
                         debug_level=args.jsbsim_debug)
     try:
@@ -318,8 +337,8 @@ def main():
     model.bound = {p for r in rows for p in r.properties}
     bindings = controls.Bindings(rows, model.set_property, model.start_engine)
 
-    print("bridge: JSBSim %s, aircraft %s, %u engine(s), home %.6f,%.6f,%.1f,%.0f" % (
-        jsbsim.__version__, args.aircraft, model.num_engines, *home_pos))
+    print("bridge: JSBSim %s, aircraft %s from %s, %u engine(s), home %.6f,%.6f,%.1f,%.0f" % (
+        jsbsim.__version__, args.aircraft, aircraft_dir, model.num_engines, *home_pos))
     print("bridge: bindings from %s" % (controls_path or 'built-in defaults (the jsbsim frame\'s)'))
     for r in rows:
         print("bridge:   %s" % r.describe())

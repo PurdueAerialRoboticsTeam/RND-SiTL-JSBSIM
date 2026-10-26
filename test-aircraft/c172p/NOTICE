@@ -1,0 +1,31 @@
+This aircraft joins a JSBSim flight model and FlightGear meshes.
+
+The flight dynamics model -- c172p.xml, the files it assembles and Engines/ -- is the
+"c172p" Cessna C-172 of the JSBSim project ($Id: c172p.xml,v 1.29). Its fileheader names
+no author ("Unknown") and no licence; the JSBSim repository it comes from is distributed
+under the GNU Lesser General Public License v2.1. Engines/ holds that project's
+eng_io320.xml and prop_75in2f.xml, unchanged. The model is the stock file split into
+files, with two departures: the engine is given a name (io320) so a propeller can find it,
+and the stock <output> block, already commented out, is left out.
+
+  https://github.com/JSBSim-Team/jsbsim  (aircraft/c172p, engine/)
+
+The meshes are the exterior and cabin of FlightGear's "c172p" (Models/c172-common.ac, the
+panel, instruments, yokes, pedals and flap switch its Models/c172p.xml assembles, with their
+textures), original by David Megginson, developed by the c172p team: gsagostinho,
+wlbragg, Juanvvc, onox, thevirtualfer, Dany93, legoboyvdlp, dg-505, tigert, AndersG,
+wkitty42, algefaen, Horacio, D-ECHO, Jarl Arntzen, Benedikt Hallinger, Sascha Reissner and
+Josh Davidson. The model is cut into one glb per moving part, hinged where that model's
+animations hinge it and stood on the flight model's main-gear contact points; the instruments
+stand still at their rest reading. Parts FlightGear shows only for an option, a state or a
+view -- the blurred propeller, cowl plugs, tie-downs, click hotspots, rain glass layers, lit
+lamp states, wheel fairings, the glass-panel variant, damage, floats and skis -- are left out. The
+model is distributed under the GNU General Public License v2.0 or later; see LICENSE in
+this folder for its text.
+
+  https://github.com/c172p-team/c172p
+
+The PX4 airframe (firmwares/px4_c172p) starts from PX4-Autopilot's 4003_gz_rc_cessna.
+PX4-Autopilot is distributed under the BSD 3-Clause License.
+
+  https://github.com/PX4/PX4-Autopilot

@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<!--
+  Metres and degrees from the centre of mass: X forward, Y right, Z up. An axis is read in the frame
+  of whatever turns. Every mesh is baked in this frame; a surface is baked about its hinge, and the
+  propeller about its hub, whose xyz is measured from the engine's shaft in Propulsion.xml. The propeller
+  turns with its unsigned rpm about -X, clockwise seen from the cockpit: Propulsion.xml sense 1.
+-->
+<visual>
+  <fixture file="meshes/fixture.glb" xyz="-0.069361 0.141423 -0.007321" rpy="0 -0.715512 0"/>
+  <propeller file="meshes/propeller.glb" xyz="0.074525 0.00127 0.215254" rpy="0 -90.715512 0" motor="io320" axis="-0.999922 0 0.012488"/>
+  <surface file="meshes/left_aileron.glb" xyz="0 0 0" rpy="0 -0.715512 0" source="left-aileron" axis="-0.103806 0.993741 -0.041276" hinge="-0.714899 -5.42995 0.478432" limit="20"/>
+  <surface file="meshes/right_aileron.glb" xyz="0 0 0" rpy="0 -0.715512 0" source="right-aileron" axis="0.103806 0.993741 0.041276" hinge="-1.012405 2.65005 0.360138" limit="20"/>
+  <surface file="meshes/flaps.glb" xyz="0 0 0" rpy="0 -0.715512 0" source="flap" axis="0 1 0" hinge="-1.006618 -0.495943 0.343064" limit="30"/>
+  <surface file="meshes/elevator_left.glb" xyz="0 0 0" rpy="0 -0.715512 0" source="elevator" axis="-0.084318 0.996438 0.001053" hinge="-4.742276 -0.100943 -0.35256" limit="28"/>
+  <surface file="meshes/elevator_right.glb" xyz="0 0 0" rpy="0 -0.715512 0" source="elevator" axis="0.084318 0.996438 -0.001053" hinge="-4.607496 1.76195 -0.354223" limit="28"/>
+  <surface file="meshes/rudder.glb" xyz="0 0 0" rpy="0 -0.715512 0" source="rudder" axis="-0.548198 -0.008187 0.836308" hinge="-4.780181 0.034057 -0.239858" limit="16"/>
+  <chase xyz="0 0 0.5" rpy="0 -15 0" length="6"/>
+</visual>

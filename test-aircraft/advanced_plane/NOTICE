@@ -1,0 +1,9 @@
+This aircraft is derived from the "advanced_plane" simulation model that ships with
+PX4-Autopilot (Tools/simulation/gz/models/advanced_plane), and carries that model's
+geometry, mass, aerodynamic and propulsion data. Its meshes are the source model's
+own -- which that model in turn takes from rc_cessna -- converted to glTF.
+
+The upstream model is distributed under the BSD 3-Clause License; see LICENSE in
+this folder for its text and copyright notice.
+
+  https://github.com/PX4/PX4-Autopilot

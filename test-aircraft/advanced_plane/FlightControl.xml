@@ -1,0 +1,111 @@
+<?xml version="1.0"?>
+  <flight_control name="Surfaces" authored="editor">
+    <property value="0">fcs/servo-0-cmd-norm</property>
+    <property value="0">fcs/servo-1-cmd-norm</property>
+    <property value="0">fcs/servo-2-cmd-norm</property>
+    <property value="0">fcs/servo-3-cmd-norm</property>
+    <property value="0">fcs/servo-4-cmd-norm</property>
+    <property value="0">fcs/servo-5-cmd-norm</property>
+    <channel name="servo_0">
+        <aerosurface_scale name="fcs/servo-0-scale">
+            <input>fcs/servo-0-cmd-norm</input>
+            <gain>1.0</gain>
+            <domain>
+                <min>-1</min>
+                <max>1</max>
+            </domain>
+            <range>
+                <min>-44.6907</min>
+                <max>44.6907</max>
+            </range>
+            <zero_centered>1</zero_centered>
+            <output>fcs/servo-0-pos-deg</output>
+            <output>fcs/left-aileron-pos-deg</output>
+        </aerosurface_scale>
+    </channel>
+    <channel name="servo_1">
+        <aerosurface_scale name="fcs/servo-1-scale">
+            <input>fcs/servo-1-cmd-norm</input>
+            <gain>1.0</gain>
+            <domain>
+                <min>-1</min>
+                <max>1</max>
+            </domain>
+            <range>
+                <min>-44.6907</min>
+                <max>44.6907</max>
+            </range>
+            <zero_centered>1</zero_centered>
+            <output>fcs/servo-1-pos-deg</output>
+            <output>fcs/right-aileron-pos-deg</output>
+        </aerosurface_scale>
+    </channel>
+    <channel name="servo_2">
+        <aerosurface_scale name="fcs/servo-2-scale">
+            <input>fcs/servo-2-cmd-norm</input>
+            <gain>1.0</gain>
+            <domain>
+                <min>-1</min>
+                <max>1</max>
+            </domain>
+            <range>
+                <min>-44.6907</min>
+                <max>44.6907</max>
+            </range>
+            <zero_centered>1</zero_centered>
+            <output>fcs/servo-2-pos-deg</output>
+            <output>fcs/elevator-pos-deg</output>
+        </aerosurface_scale>
+    </channel>
+    <channel name="servo_3">
+        <aerosurface_scale name="fcs/servo-3-scale">
+            <input>fcs/servo-3-cmd-norm</input>
+            <gain>1.0</gain>
+            <domain>
+                <min>-1</min>
+                <max>1</max>
+            </domain>
+            <range>
+                <min>-44.6907</min>
+                <max>44.6907</max>
+            </range>
+            <zero_centered>1</zero_centered>
+            <output>fcs/servo-3-pos-deg</output>
+            <output>fcs/rudder-pos-deg</output>
+        </aerosurface_scale>
+    </channel>
+    <channel name="servo_4">
+        <aerosurface_scale name="fcs/servo-4-scale">
+            <input>fcs/servo-4-cmd-norm</input>
+            <gain>1.0</gain>
+            <domain>
+                <min>-1</min>
+                <max>1</max>
+            </domain>
+            <range>
+                <min>-44.6907</min>
+                <max>44.6907</max>
+            </range>
+            <zero_centered>1</zero_centered>
+            <output>fcs/servo-4-pos-deg</output>
+            <output>fcs/flap-pos-deg</output>
+        </aerosurface_scale>
+    </channel>
+    <channel name="servo_5">
+        <aerosurface_scale name="fcs/servo-5-scale">
+            <input>fcs/servo-5-cmd-norm</input>
+            <gain>1.0</gain>
+            <domain>
+                <min>-1</min>
+                <max>1</max>
+            </domain>
+            <range>
+                <min>-44.6907</min>
+                <max>44.6907</max>
+            </range>
+            <zero_centered>1</zero_centered>
+            <output>fcs/servo-5-pos-deg</output>
+            <output>fcs/flap-pos-deg</output>
+        </aerosurface_scale>
+    </channel>
+  </flight_control>

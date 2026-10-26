@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<!--
+  Metres and degrees from the centre of mass, where the actor stands: X forward, Y right,
+  Z up. An axis is read in the frame of whatever turns.
+-->
+<visual>
+  <fixture file="meshes/base_link__base_link_visual.glb" xyz="0.065068 0 -0.0629932" rpy="0 0 -90"/>
+  <fixture file="meshes/lw20_link__visual.glb" xyz="0.045068 0 -0.0829932" rpy="89.9544 0 -90"/>
+  <fixture file="meshes/LeftWheel__LeftWheelVisual.glb" xyz="-0.039932 -0.13 -0.102993" rpy="-180 -90 90"/>
+  <fixture file="meshes/RightWheel__RightWheelVisual.glb" xyz="-0.039932 0.13 -0.102993" rpy="-180 -90 90"/>
+  <fixture file="meshes/CenterWheel__CenterWheelVisual.glb" xyz="0.130068 0 -0.102993" rpy="-180 -90 90"/>
+
+  <propeller file="meshes/rotor_puller__rotor_puller_visual.glb" xyz="-0.0888 0 0.0058" rpy="89.954400000000049 -6.3611093629270335e-15 -90.000000000000028" motor="rotor_puller" axis="1 0 -0.000796"/>
+
+  <surface file="meshes/left_elevon__left_elevon_visual.glb" xyz="0.153694 0.362823 -0.150332" rpy="0 0 -90" source="left-aileron" axis="-0.1172 1 -0.04409" hinge="-0.088626 -0.362823 0.087339" limit="61.7"/>
+  <surface file="meshes/right_elevon__right_elevon_visual.glb" xyz="0.155054 -0.361274 -0.150315" rpy="0 0 -90" source="right-aileron" axis="0.1136 1 0.04308" hinge="-0.089986 0.361274 0.087322" limit="44.6907"/>
+  <surface file="meshes/left_flap__left_flap_visual.glb" xyz="0.158143 0.164522 -0.144851" rpy="0 0 -90" source="flap" axis="-0.001739 1 -0.02588" hinge="-0.093075 -0.164522 0.081858" limit="44.6907"/>
+  <surface file="meshes/right_flap__right_flap_visual.glb" xyz="0.158713 -0.16328 -0.144949" rpy="0 0 -90" source="flap" axis="-0.00174 1 0.02749" hinge="-0.093645 0.16328 0.081956" limit="44.6907"/>
+  <surface file="meshes/elevator__elevator_visual.glb" xyz="0.554268 0 -0.0574932" rpy="0 0 -90" source="elevator" axis="0 1 0" hinge="-0.4892 0 -0.0055" limit="44.6907"/>
+  <surface file="meshes/rudder__rudder_visual.glb" xyz="0.600183 0.00124853 -0.166808" rpy="0 0 -90" source="rudder" axis="0.4461 0 -1" hinge="-0.535115 -0.00124853 0.103814" limit="44.6907"/>
+
+  <chase xyz="0.0117 0 0.057122" rpy="0 -15 0" length="3"/>
+
+</visual>

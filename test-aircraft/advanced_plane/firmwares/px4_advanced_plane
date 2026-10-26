@@ -1,0 +1,48 @@
+#!/bin/sh
+#
+# @name advanced_plane
+# @type Plane
+#
+# Generated from the source model's own plugins. Motor order,
+# senses, geometry and surface effectiveness are the model's; nothing here is guessed.
+#
+
+. ${R}etc/init.d/rc.fw_defaults
+
+param set-default CA_AIRFRAME 1
+param set-default MAV_TYPE 1
+
+param set-default CA_ROTOR_COUNT 1
+param set-default CA_ROTOR0_PX 0.3
+param set-default CA_ROTOR0_PY -0
+param set-default CA_ROTOR0_PZ -0
+param set-default CA_ROTOR0_KM -0.01
+param set-default CA_ROTOR0_CT 104.7
+
+param set-default CA_SV_CS_COUNT 6
+param set-default CA_SV_CS0_TYPE 12
+param set-default CA_SV_CS0_TRQ_R -0.8725
+param set-default CA_SV_CS0_TRQ_P 0.05807
+param set-default CA_SV_CS0_TRQ_Y -0.01493
+param set-default CA_SV_CS1_TYPE 12
+param set-default CA_SV_CS1_TRQ_R 0.8725
+param set-default CA_SV_CS1_TRQ_P 0.05807
+param set-default CA_SV_CS1_TRQ_Y 0.01493
+param set-default CA_SV_CS2_TYPE 12
+param set-default CA_SV_CS2_TRQ_P 1
+param set-default CA_SV_CS3_TYPE 12
+param set-default CA_SV_CS3_TRQ_R -0.06732
+param set-default CA_SV_CS3_TRQ_Y 0.4225
+param set-default CA_SV_CS4_TYPE 12
+param set-default CA_SV_CS5_TYPE 12
+
+param set-default PWM_MAIN_FUNC1 101
+param set-default PWM_MAIN_FUNC2 201
+param set-default PWM_MAIN_FUNC3 202
+param set-default PWM_MAIN_FUNC4 203
+param set-default PWM_MAIN_FUNC5 204
+param set-default PWM_MAIN_FUNC6 205
+param set-default PWM_MAIN_FUNC7 206
+
+param set-default SIM_BAT_ENABLE 0
+param set-default COM_ARM_CHK_ESCS 0

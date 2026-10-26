@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<!--
+  Derived from the model: the diameter is this propeller's own mesh measured after scaling, and the
+  coefficients reproduce its motorConstant and momentConstant exactly at zero airspeed.
+
+  The tables are flat because the source has no advance ratio in it: Gazebo's motor model computes
+  thrust from rotational speed alone. A curve here would be invented, and this vehicle would then
+  fly on numbers nobody measured.
+
+  ixx is the rotor link's own inertia tensor about the axis its joint turns about. It is the gyroscopic coupling JSBSim carries (FGPropeller.cpp:289), and the
+  motor beside this back-solves its coil resistance from the same number.
+-->
+<propeller name="advanced_plane_prop_0" version="1.1">
+  <diameter unit="IN"> 10.16 </diameter>
+  <numblades> 2 </numblades>
+  <constspeed> 0 </constspeed>
+  <ixx unit="KG*M2"> 0.0001676 </ixx>
+  <table name="C_THRUST" type="internal">
+    <tableData>
+      0.0  0.0621783
+      1.0  0.0621783
+    </tableData>
+  </table>
+  <table name="C_POWER" type="internal">
+    <tableData>
+      0.0  0.0151425
+      1.0  0.0151425
+    </tableData>
+  </table>
+</propeller>

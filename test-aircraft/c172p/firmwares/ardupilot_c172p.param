@@ -1,0 +1,83 @@
+# ArduPlane parameters for the c172p, layered over ArduPilot's Tools/autotest/models/plane.parm:
+#   sim_vehicle.py -v ArduPlane --model JSON:<host> --add-param-file Tools/autotest/models/plane.parm --add-param-file <this file>
+# plane.parm is written for a small RC plane (cruise 22 m/s, minimum 10 m/s); a 172 stalls above that.
+# The simulator's airspeed sensor arrives in the JSON "airspeed" field, which only the SITL sensor type reads.
+ARSPD_TYPE 100
+ARSPD_USE 1
+# AIRSPEED_MIN is TECS's underspeed floor: at or below it TECS demands PTCH_LIM_MIN, which on the runway pins the
+# nose down at rotation speed. The floor therefore sits under the rotation speed; the JSBSim c172p stalls at
+# 24.5 m/s clean and 22 m/s with full flaps. Cruise and maximum follow the POH (Vy 75 KIAS, Vno 128 KIAS).
+AIRSPEED_MIN 22
+AIRSPEED_CRUISE 38
+AIRSPEED_MAX 60
+# Rotate where the wing flies (the clean stall, 24.5 m/s): held level beyond it a nosewheel aircraft wheelbarrows.
+# 2 deg is its stance on the gear, so the ground roll is elevator-neutral.
+TKOFF_ROTATE_SPD 25
+TKOFF_GND_PITCH 2
+# Ground steering only exists below this height (ArduPlane Attitude.cpp, stabilize_yaw); at the default 0 the
+# runway roll is steered by the coordinated-turn rudder, which follows a swing instead of holding the course.
+GROUND_STEER_ALT 5
+# JSBSim's c172p (propeller sense +1, p_factor 5) yaws left under power, about 8 deg over a hands-off take-off roll
+# to 25 m/s. ArduPlane's rudder only coordinates turns by default; its yaw controller puts out
+# DAMP * (integrator - yaw rate) degrees, so the damping gain sizes the whole output and the sideslip/integrator
+# gains set how fast it trims the p-factor. The rudder channel also steers the nosewheel (Controls.xml).
+YAW2SRV_DAMP 1.0
+YAW2SRV_SLIP 1.0
+YAW2SRV_INT 0.7
+YAW2SRV_IMAX 3000
+TKOFF_THR_MAX 100
+TKOFF_ALT 80
+TKOFF_LVL_PITCH 5
+# JSBSim c172p at 1000 m: full-throttle climb 5.1 m/s at 35 m/s, idle sink 3.7 m/s at 30 m/s.
+TECS_CLMB_MAX 3.5
+TECS_SINK_MIN 3
+TECS_SINK_MAX 5
+PTCH_LIM_MAX_DEG 12
+PTCH_LIM_MIN_DEG -10
+ROLL_LIMIT_DEG 25
+LEVEL_ROLL_LIMIT 5
+TRIM_THROTTLE 60
+# A one-tonne aircraft at 38 m/s: the default 60 m loiter would need a 68 deg bank (400 m: 20 deg), and the
+# default L1 period is for a small RC plane that rolls in a fraction of a second.
+WP_LOITER_RAD 400
+WP_RADIUS 90
+NAVL1_PERIOD 25
+RLL2SRV_TCONST 0.5
+PTCH2SRV_TCONST 0.5
+# plane.parm's rate loops are the Rascal's, sized for a model a tenth of the 172's inertia. Starting point for
+# AUTOTUNE: three times the Rascal's gains.
+PTCH_RATE_P 0.5
+PTCH_RATE_I 0.3
+PTCH_RATE_D 0.02
+PTCH_RATE_FF 1.0
+RLL_RATE_P 0.6
+RLL_RATE_I 0.3
+RLL_RATE_D 0.02
+RLL_RATE_FF 0.5
+# A slower height loop, more damping and capped rates than plane.parm's, for an aircraft with the 172's inertia.
+TECS_TIME_CONST 15
+TECS_PTCH_DAMP 1.0
+TECS_THR_DAMP 0.7
+TECS_INTEG_GAIN 0.1
+TECS_VERT_ACC 3
+THR_SLEWRATE 30
+PTCH2SRV_RMAX_UP 30
+PTCH2SRV_RMAX_DN 30
+RLL2SRV_RMAX 60
+# Take-off mode holds the wings level until TKOFF_LVL_ALT or TKOFF_DIST from the start, whichever comes first, then
+# navigates to the loiter point TKOFF_DIST ahead. A 172 rolls several hundred metres before it lifts off, so the
+# distance must reach well past lift-off or the navigation turns the aircraft a few metres above the runway.
+TKOFF_DIST 1500
+TKOFF_LVL_ALT 40
+# Landing: flaps 30 (full); 29 m/s is 56 KIAS, under the POH's 60-70 because the simulator applies no wheel brakes
+# and the roll-out length goes with the square of the touchdown speed. Without flaps a 172 floats far past the aim
+# point; the Rascal's 1 deg flare attitude would land a 172 on its nosewheel. Flaps are output 5 of
+# the ArduPilot bindings (Controls.xml); FlapAuto (3) applies the landing and take-off percentages.
+SERVO5_FUNCTION 3
+LAND_FLAP_PERCNT 100
+FLAP_SLEWRATE 10
+TECS_LAND_ARSPD 29
+LAND_PITCH_DEG 5
+LAND_FLARE_ALT 3
+LAND_FLARE_SEC 2
+LAND_DISARMDELAY 10

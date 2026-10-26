@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+  <mass_balance>
+    <emptywt unit="KG"> 1.176 </emptywt>
+    <location name="CG" unit="M">
+      <x> -0.00493196 </x>
+      <y> 0 </y>
+      <z> -0.0170068 </z>
+    </location>
+    <ixx unit="KG*M2"> 0.201394 </ixx>
+    <iyy unit="KG*M2"> 0.149668 </iyy>
+    <izz unit="KG*M2"> 0.151144 </izz>
+    <ixy unit="KG*M2"> 0 </ixy>
+    <ixz unit="KG*M2"> 0.000391361 </ixz>
+    <iyz unit="KG*M2"> 0 </iyz>
+  </mass_balance>

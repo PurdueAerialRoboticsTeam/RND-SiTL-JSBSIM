@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<!--
+  Sized to the model's maxRotVelocity of 3500 rad/s, which is 33423 rpm: the
+  velocity constant is that speed divided by a 14.8 V pack, so full throttle turns the
+  propeller as fast as the source says and no faster.
+
+  Coil resistance is what makes this rotor reach a new speed in the 0.0125 s the model states as its timeConstantUp, which is the whole of how quickly the vehicle can answer its autopilot. It is not a borrowed number.
+
+  No-load current is NOT from the model either. It shapes how much current this draws rather
+  than how much thrust it makes, and is the figure to replace first if the vehicle is ever
+  given a battery worth simulating.
+
+  The model also states timeConstantDown 0.025, rollingMomentCoefficient 1e-06, which this format cannot carry: a brushless
+  motor has one coil resistance for both directions, so spin-up and spin-down share
+  a time constant, and JSBSim has no rolling-moment term for a rotor at all.
+-->
+<brushless_dc_motor name="advanced_plane_motor_0">
+  <velocityconstant> 2258 </velocityconstant>
+  <coilresistance> 0.001334 </coilresistance>
+  <noloadcurrent> 0.45 </noloadcurrent>
+  <maxvolts> 14.8 </maxvolts>
+</brushless_dc_motor>

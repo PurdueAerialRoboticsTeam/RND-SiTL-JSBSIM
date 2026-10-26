@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<fdm_config name="advanced_plane" version="2.0" release="ALPHA">
+  <metrics file="Metrics.xml"/>
+  <mass_balance file="Mass.xml"/>
+  <aerodynamics file="Aero.xml"/>
+  <flight_control file="FlightControl.xml"/>
+  <ground_reactions file="Gear.xml"/>
+  <propulsion file="Propulsion.xml"/>
+</fdm_config>

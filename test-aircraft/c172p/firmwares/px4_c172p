@@ -1,0 +1,143 @@
+#!/bin/sh
+#
+# @name PteroSim Cessna 172
+# @type Fixedwing
+# @class Plane
+#
+# Copied from 4003_gz_rc_cessna with Gazebo-specific params removed.
+# Channel mapping (matches Controls.xml):
+#   HIL Channel 0: Engine (throttle)
+#   HIL Channel 1: Elevator
+#   HIL Channel 2: Aileron (single channel, controls both L+R via JSBSim)
+#   HIL Channel 3: Rudder
+#   HIL Channel 4: Flaps
+#
+
+. ${R}etc/init.d/rc.fw_defaults
+
+param set-default SENS_EN_ARSPDSIM 1
+
+# ── Airspeed (full-size C172, NOT RC model) ────────────────────────────
+# PX4 defaults (10/15/20 m/s) are for RC planes. C172: Vs1=25, Vy=38, Vno=66 m/s
+# PX4 scales the rate-loop gains by (FW_AIRSPD_TRIM / airspeed)^2, so the trim speed is the 172's cruise,
+# not an RC plane's 15 m/s.
+
+# model: clean level trim fails below 24.5 m/s
+param set-default FW_AIRSPD_STALL 24
+param set-default FW_AIRSPD_MIN 28
+param set-default FW_AIRSPD_TRIM 38
+param set-default FW_AIRSPD_MAX 60
+
+# ── Airframe ────────────────────────────────────────────────────────────
+
+param set-default CA_AIRFRAME 1
+param set-default COM_PREARM_MODE 2
+
+# ── Motor (single tractor prop) ─────────────────────────────────────────
+
+param set-default CA_ROTOR_COUNT 1
+param set-default CA_ROTOR0_PX 0.3
+
+# ── Control Surfaces ────────────────────────────────────────────────────
+# Gazebo uses 6 CS (dual ailerons + spoilers), PteroSim uses 4 (single aileron via JSBSim)
+
+param set-default CA_SV_CS_COUNT 4
+
+# CS0 → Elevator (HIL Channel 1)
+param set-default CA_SV_CS0_TYPE 3
+param set-default CA_SV_CS0_TRQ_P 1.0
+
+# CS1 → Aileron (HIL Channel 2) — single channel, full roll authority
+param set-default CA_SV_CS1_TYPE 1
+param set-default CA_SV_CS1_TRQ_R -1.0
+
+# CS2 → Rudder (HIL Channel 3)
+param set-default CA_SV_CS2_TYPE 4
+param set-default CA_SV_CS2_TRQ_Y 1.0
+
+# CS3 → Flaps (HIL Channel 4)
+param set-default CA_SV_CS3_TYPE 9
+
+# ── Output Function Mapping ─────────────────────────────────────────────
+# PWM_MAIN_FUNCn determines HIL_ACTUATOR_CONTROLS channel order
+# 101=Motor1, 201=Servo1(CS0), 202=Servo2(CS1), ...
+
+param set-default PWM_MAIN_FUNC1 101
+param set-default PWM_MAIN_FUNC2 201
+param set-default PWM_MAIN_FUNC3 202
+param set-default PWM_MAIN_FUNC4 203
+param set-default PWM_MAIN_FUNC5 204
+param set-default PWM_MAIN_FUNC6 401
+
+# ── Flight Controller Tuning (from Gazebo rc_cessna — identical) ────────
+
+param set-default FW_PR_P 0.9
+param set-default FW_PR_FF 0.2
+param set-default FW_PR_I 0.5
+param set-default TRIM_PITCH 0
+
+param set-default FW_RR_FF 0.8
+param set-default FW_RR_P 0.8
+param set-default FW_RR_I 1.0
+param set-default FW_R_RMAX 56.15
+
+param set-default FW_YR_FF 0.4
+# FW_YR_P set in Ground Steering section below
+param set-default FW_YR_I 1.0
+
+# ── Performance Limits ──────────────────────────────────────────────────
+
+param set-default FW_PSP_OFF 0
+param set-default FW_P_LIM_MIN -15
+param set-default FW_T_CLMB_MAX 3
+param set-default FW_T_SINK_MAX 3.5
+param set-default FW_T_SINK_MIN 4
+# JSBSim c172p at 1000 m: idle sink 3.7 m/s at 30 m/s, full-throttle climb 5.1 m/s at 35 m/s. SINK_MIN below the idle sink
+# pins the TECS throttle feed-forward at 0 and the aircraft dives at idle.
+# FW_THR_MIN stays 0: a throttle floor holds power on after touchdown, and the simulator applies no wheel brakes.
+param set-default FW_R_LIM 35
+
+# ── Navigation ──────────────────────────────────────────────────────────
+
+param set-default NPFG_PERIOD 12
+# A one-tonne aircraft turns on a 300 m radius at 38 m/s; 15 m / 50 m are RC-plane radii.
+param set-default NAV_ACC_RAD 90
+param set-default NAV_LOITER_RAD 300
+param set-default NAV_DLL_ACT 2
+param set-default MIS_TAKEOFF_ALT 30
+
+# ── Takeoff / Landing ──────────────────────────────────────────────────
+
+param set-default FW_LND_ANG 8
+param set-default RWTO_TKOFF 1
+param set-default FW_SPOILERS_LND 0.4
+
+# ── Weathervane ─────────────────────────────────────────────────────────
+
+param set-default FW_W_EN 1
+
+# ── Safety ──────────────────────────────────────────────────────────────
+
+param set-default FD_ESCS_EN 0
+
+# ── Ground Steering ─────────────────────────────────────────────────────
+# Controls.xml drives the nosewheel (fcs/steer-cmd-norm) from the rudder channel (ch3).
+# PX4 wheel controller (func 401) is NOT mapped — conflicts with yaw rate controller.
+# Ground steering is handled by yaw rate controller via rudder (ch3).
+# Yaw rate P raised to hold the runway heading against the propeller's p-factor during the ground roll.
+
+param set-default FW_YR_P 8.0
+
+# ── Faster rotation ─────────────────────────────────────────────────────
+# Rotate earlier (Vr slightly below Vs1) and pitch up more aggressively
+param set-default RWTO_ROT_AIRSPD 18
+param set-default RWTO_PSP 3
+
+param set-default FW_LND_USETER 0
+# ── Force-set params (param set-default won't override built-in defaults) ──
+param set RWTO_PSP 3
+param set RWTO_ROT_AIRSPD 18
+param set TRIM_PITCH 0
+param set FW_YR_P 8.0
+param set RWTO_TKOFF 1
+param set FW_LND_USETER 0

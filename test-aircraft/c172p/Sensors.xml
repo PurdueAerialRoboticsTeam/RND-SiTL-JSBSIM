@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<!--
+  Metres, X forward / Y right / Z up from the centre of mass, the frame Visual.xml states. The cockpit
+  camera sits where the source model puts its pilot's eye (c172p-views.xml view 0: 0.21 m left,
+  0.273 m up, 0.36 m aft of the model origin). An attribute absent here means the component's own default.
+-->
+<sensors>
+  <sensor type="imu" name="imu_sensor" hz="250"/>
+  <sensor type="barometer" name="air_pressure_sensor" hz="50"/>
+  <sensor type="gps" name="navsat_sensor" hz="30"/>
+  <sensor type="airspeed" name="airspeed"/>
+  <sensor type="camera" name="cockpit" xyz="-0.2352 -0.176 0.2884"/>
+</sensors>

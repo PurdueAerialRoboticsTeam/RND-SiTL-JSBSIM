@@ -1,0 +1,31 @@
+<?xml version="1.0"?>
+<control_bindings stack="PX4" pilot="direct">
+  <binding stack="PX4" channel="0" type="Motor" in="0 1" out="0 1" label="rotor_puller"/>
+  <binding stack="PX4" channel="1" property="fcs/servo-0-cmd-norm" in="-1 1" out="-1 1" label="left_elevon"/>
+  <binding stack="PX4" channel="2" property="fcs/servo-1-cmd-norm" in="-1 1" out="-1 1" label="right_elevon"/>
+  <binding stack="PX4" channel="3" property="fcs/servo-2-cmd-norm" in="-1 1" out="-1 1" label="elevator"/>
+  <binding stack="PX4" channel="4" property="fcs/servo-3-cmd-norm" in="-1 1" out="-1 1" label="rudder"/>
+  <binding stack="PX4" channel="5" property="fcs/servo-4-cmd-norm" in="-1 1" out="-1 1" label="left_flap"/>
+  <binding stack="PX4" channel="6" property="fcs/servo-5-cmd-norm" in="-1 1" out="-1 1" label="right_flap"/>
+  <!-- Manual sends the sticks +1 right, forward (nose down) and right; Aero.xml rolls left on servo 0 and noses up on servo 2. -->
+  <binding stack="Manual" channel="0" property="fcs/servo-0-cmd-norm" in="-1 1" out="-1 1" invert="1" label="left_elevon"/>
+  <binding stack="Manual" channel="0" property="fcs/servo-1-cmd-norm" in="-1 1" out="-1 1" label="right_elevon"/>
+  <binding stack="Manual" channel="1" property="fcs/servo-2-cmd-norm" in="-1 1" out="-1 1" invert="1" label="elevator"/>
+  <binding stack="Manual" channel="2" type="Motor" index="0" in="0 1" out="0 1" label="rotor_puller"/>
+  <binding stack="Manual" channel="3" property="fcs/servo-3-cmd-norm" in="-1 1" out="-1 1" label="rudder"/>
+
+  <!--
+    ArduPlane rows, added in this repository (PteroSimAircrafts ships PX4 and Manual rows only).
+    ArduPlane's default outputs: SERVO1 aileron, SERVO2 elevator, SERVO3 throttle, SERVO4 rudder.
+    Above 1500 ArduPlane means roll right, nose up, yaw right; Aero.xml rolls left on servo 0,
+    rolls right on servo 1, noses up on servo 2 and yaws right on servo 3 (checked open-loop),
+    so only servo 0 is inverted. Property rows are not mirrored, so no SERVOn_REVERSED is needed.
+    servo 4/5 (flaps) are not used by Aero.xml and are left unbound.
+    Parameters: firmwares/ardupilot_advanced_plane.param.
+  -->
+  <binding stack="ArduPilot" channel="0" property="fcs/servo-0-cmd-norm" in="-1 1" out="-1 1" invert="1" label="left aileron"/>
+  <binding stack="ArduPilot" channel="0" property="fcs/servo-1-cmd-norm" in="-1 1" out="-1 1" label="right aileron"/>
+  <binding stack="ArduPilot" channel="1" property="fcs/servo-2-cmd-norm" in="-1 1" out="-1 1" label="elevator"/>
+  <binding stack="ArduPilot" channel="2" type="Motor" index="0" in="0 1" out="0 1" label="rotor_puller"/>
+  <binding stack="ArduPilot" channel="3" property="fcs/servo-3-cmd-norm" in="-1 1" out="-1 1" label="rudder"/>
+</control_bindings>

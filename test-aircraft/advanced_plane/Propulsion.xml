@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+  <propulsion>
+    <engine file="advanced_plane_motor_0" name="rotor_puller">
+      <thruster file="advanced_plane_prop_0">
+        <location unit="M">
+          <x> -0.3 </x>
+          <y> 0 </y>
+          <z> 0 </z>
+        </location>
+        <orient unit="DEG">
+          <roll> 0 </roll>
+          <pitch> 0 </pitch>
+          <yaw> 0 </yaw>
+        </orient>
+        <sense> -1 </sense>
+      </thruster>
+    </engine>
+  </propulsion>

@@ -1,0 +1,37 @@
+<?xml version="1.0"?>
+<!--
+  A sidecar: JSBSim never reads this file. Channels come in the order each autopilot's output functions
+  put them. PX4 (firmwares/px4_c172p): PWM_MAIN_FUNC1..5 = motor, elevator, aileron, rudder, flaps.
+  ArduPlane's own defaults (Tools/autotest/models/plane.parm): SERVO1 aileron, SERVO2 elevator,
+  SERVO3 throttle, SERVO4 rudder, then flaps. A typed row takes the stack's sign convention: ArduPlane's
+  elevator and rudder servos above 1500 are nose up and yaw right, JSBSim's commands +1 are trailing
+  edge down and trailing edge left, so those two are inverted on the way in - the same two servos
+  ArduPilot reverses for its own JSBSim frame (Tools/autotest/default_params/plane-jsbsim.parm).
+  The nosewheel steers from the rudder channel as well, the way FlightGear's rudder pedals drive the c172p's
+  fcs/steer-cmd-norm. The stack's sign convention has already turned that channel into JSBSim's rudder sign
+  (+1 = yaw left) by the time a binding reads it, and fcs/steer-cmd-norm +1 turns the nosewheel right
+  (Gear.xml NOSE max_steer 10 deg), so the nosewheel rows are inverted.
+  Nothing else is bound: the engine idles at throttle 0 and the wheels have no brakes. To command them, add a
+  property row on a free channel and give that channel a function in the firmware: propulsion/magneto_cmd
+  (0 off, 3 both), fcs/left-brake-cmd-norm, fcs/right-brake-cmd-norm.
+-->
+<control_bindings stack="PX4" pilot="direct">
+  <binding stack="PX4" channel="0" type="Motor" index="0" in="0 1" out="0 1" label="io320"/>
+  <binding stack="PX4" channel="1" type="Elevator" in="-1 1" out="-1 1" label="elevator"/>
+  <binding stack="PX4" channel="2" type="Aileron" in="-1 1" out="-1 1" label="aileron"/>
+  <binding stack="PX4" channel="3" type="Rudder" in="-1 1" out="-1 1" label="rudder"/>
+  <binding stack="PX4" channel="3" property="fcs/steer-cmd-norm" in="-1 1" out="-1 1" invert="1" label="nosewheel"/>
+  <binding stack="PX4" channel="4" type="Flaps" in="0 1" out="0 1" label="flaps"/>
+  <binding stack="ArduPilot" channel="0" type="Aileron" in="-1 1" out="-1 1" label="aileron"/>
+  <binding stack="ArduPilot" channel="1" type="Elevator" in="-1 1" out="-1 1" label="elevator"/>
+  <binding stack="ArduPilot" channel="2" type="Motor" index="0" in="0 1" out="0 1" label="io320"/>
+  <binding stack="ArduPilot" channel="3" type="Rudder" in="-1 1" out="-1 1" label="rudder"/>
+  <binding stack="ArduPilot" channel="3" property="fcs/steer-cmd-norm" in="-1 1" out="-1 1" invert="1" label="nosewheel"/>
+  <binding stack="ArduPilot" channel="4" type="Flaps" in="0 1" out="0 1" label="flaps"/>
+  <!-- Manual sends the sticks +1 right, forward (nose down) and right: only JSBSim's rudder, +1 yaw left, is inverted. -->
+  <binding stack="Manual" channel="0" type="Aileron" in="-1 1" out="-1 1" label="aileron"/>
+  <binding stack="Manual" channel="1" type="Elevator" in="-1 1" out="-1 1" label="elevator"/>
+  <binding stack="Manual" channel="2" type="Motor" index="0" in="0 1" out="0 1" label="io320"/>
+  <binding stack="Manual" channel="3" type="Rudder" in="-1 1" out="-1 1" invert="1" label="rudder"/>
+  <binding stack="Manual" channel="3" property="fcs/steer-cmd-norm" in="-1 1" out="-1 1" label="nosewheel"/>
+</control_bindings>

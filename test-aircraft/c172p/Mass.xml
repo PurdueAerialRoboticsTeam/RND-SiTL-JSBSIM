@@ -1,0 +1,55 @@
+<?xml version="1.0"?>
+    <mass_balance>
+        <ixx unit="SLUG*FT2"> 948 </ixx>
+        <iyy unit="SLUG*FT2"> 1346 </iyy>
+        <izz unit="SLUG*FT2"> 1967 </izz>
+        <ixy unit="SLUG*FT2"> -0 </ixy>
+        <ixz unit="SLUG*FT2"> -0 </ixz>
+        <iyz unit="SLUG*FT2"> -0 </iyz>
+        <emptywt unit="LBS"> 1500 </emptywt>
+        <location name="CG" unit="IN">
+            <x> 41 </x>
+            <y> 0 </y>
+            <z> 36.5 </z>
+        </location>
+        <pointmass name="Pilot">
+            <weight unit="LBS"> 180 </weight>
+            <location unit="IN">
+                <x> 36 </x>
+                <y> -14 </y>
+                <z> 24 </z>
+            </location>
+        </pointmass>
+        <pointmass name="Co-Pilot">
+            <weight unit="LBS"> 0 </weight>
+            <location unit="IN">
+                <x> 36 </x>
+                <y> 14 </y>
+                <z> 24 </z>
+            </location>
+        </pointmass>
+        <pointmass name="Left Passenger">
+            <weight unit="LBS"> 0 </weight>
+            <location unit="IN">
+                <x> 70 </x>
+                <y> -14 </y>
+                <z> 24 </z>
+            </location>
+        </pointmass>
+        <pointmass name="Right Passenger">
+            <weight unit="LBS"> 0 </weight>
+            <location unit="IN">
+                <x> 70 </x>
+                <y> 14 </y>
+                <z> 24 </z>
+            </location>
+        </pointmass>
+        <pointmass name="Baggage">
+            <weight unit="LBS"> 0 </weight>
+            <location unit="IN">
+                <x> 95 </x>
+                <y>  0 </y>
+                <z> 24 </z>
+            </location>
+        </pointmass>
+    </mass_balance>

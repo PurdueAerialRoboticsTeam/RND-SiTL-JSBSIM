@@ -30,12 +30,12 @@
       <function>
         <property>edf/thrust-lbs</property>
       </function>
-      <location unit="M">
+      <location unit="M">          <!-- fan position, metres from the nose: x aft, y right, z up -->
         <x> 0.80 </x>
         <y> 0.00 </y>
         <z> 0.00 </z>
       </location>
-      <direction>
+      <direction>                  <!-- thrust direction in body axes: x forward, y right, z down -->
         <x> 1 </x>
         <y> 0 </y>
         <z> 0 </z>

@@ -26,6 +26,7 @@
           <property>metrics/Sw-sqft</property>
           <table>
             <independentVar lookup="row">aero/alpha-rad</independentVar>
+            <!-- angle of attack (rad)   coefficient -->
             <tableData>
                -3.1416    0.0000
                -1.5708   -0.0000
@@ -71,7 +72,7 @@
           <property>metrics/Sw-sqft</property>
           <property>velocities/q-aero-rad_sec</property>
           <property>aero/ci2vel</property>
-          <value> 5 </value>
+          <value> 5 </value>           <!-- CL per unit pitch rate (q c / 2V) -->
         </product>
       </function>
 
@@ -82,7 +83,7 @@
           <property>metrics/Sw-sqft</property>
           <property>aero/alphadot-rad_sec</property>
           <property>aero/ci2vel</property>
-          <value> 1.5 </value>
+          <value> 1.5 </value>         <!-- CL per unit alpha rate (alpha-dot c / 2V) -->
         </product>
       </function>
 
@@ -92,7 +93,7 @@
           <property>aero/qbar-psf</property>
           <property>metrics/Sw-sqft</property>
           <property>fcs/flap-left-pos-rad</property>
-          <value> 0.382 </value>
+          <value> 0.382 </value>       <!-- CL per rad of left flap -->
         </product>
       </function>
 
@@ -102,7 +103,7 @@
           <property>aero/qbar-psf</property>
           <property>metrics/Sw-sqft</property>
           <property>fcs/flap-right-pos-rad</property>
-          <value> 0.382 </value>
+          <value> 0.382 </value>       <!-- CL per rad of right flap -->
         </product>
       </function>
 
@@ -112,7 +113,7 @@
           <property>aero/qbar-psf</property>
           <property>metrics/Sw-sqft</property>
           <property>fcs/spoiler-left-pos-norm</property>
-          <value> -0.15 </value>
+          <value> -0.15 </value>       <!-- CL with the left spoiler fully deployed -->
         </product>
       </function>
 
@@ -122,7 +123,7 @@
           <property>aero/qbar-psf</property>
           <property>metrics/Sw-sqft</property>
           <property>fcs/spoiler-right-pos-norm</property>
-          <value> -0.15 </value>
+          <value> -0.15 </value>       <!-- CL with the right spoiler fully deployed -->
         </product>
       </function>
 
@@ -132,7 +133,7 @@
           <property>aero/qbar-psf</property>
           <property>metrics/Sw-sqft</property>
           <property>fcs/ruddervator-left-pos-rad</property>
-          <value> 0.143 </value>
+          <value> 0.143 </value>       <!-- CL per rad of left ruddervator -->
         </product>
       </function>
 
@@ -142,7 +143,7 @@
           <property>aero/qbar-psf</property>
           <property>metrics/Sw-sqft</property>
           <property>fcs/ruddervator-right-pos-rad</property>
-          <value> 0.143 </value>
+          <value> 0.143 </value>       <!-- CL per rad of right ruddervator -->
         </product>
       </function>
   </axis>
@@ -155,6 +156,7 @@
           <property>metrics/Sw-sqft</property>
           <table>
             <independentVar lookup="row">aero/alpha-rad</independentVar>
+            <!-- angle of attack (rad)   coefficient -->
             <tableData>
                -3.1416    0.0300
                -1.5708    1.2300
@@ -199,7 +201,7 @@
           <property>aero/qbar-psf</property>
           <property>metrics/Sw-sqft</property>
           <abs><property>aero/beta-rad</property></abs>
-          <value> 0.15 </value>
+          <value> 0.15 </value>        <!-- CD per rad of sideslip, either direction -->
         </product>
       </function>
 
@@ -209,7 +211,7 @@
           <property>aero/qbar-psf</property>
           <property>metrics/Sw-sqft</property>
           <abs><property>fcs/aileron-left-pos-rad</property></abs>
-          <value> 0.01 </value>
+          <value> 0.01 </value>        <!-- CD per rad of left aileron, either direction -->
         </product>
       </function>
 
@@ -219,7 +221,7 @@
           <property>aero/qbar-psf</property>
           <property>metrics/Sw-sqft</property>
           <abs><property>fcs/aileron-right-pos-rad</property></abs>
-          <value> 0.01 </value>
+          <value> 0.01 </value>        <!-- CD per rad of right aileron, either direction -->
         </product>
       </function>
 
@@ -229,7 +231,7 @@
           <property>aero/qbar-psf</property>
           <property>metrics/Sw-sqft</property>
           <abs><property>fcs/ruddervator-left-pos-rad</property></abs>
-          <value> 0.02 </value>
+          <value> 0.02 </value>        <!-- CD per rad of left ruddervator, either direction -->
         </product>
       </function>
 
@@ -239,7 +241,7 @@
           <property>aero/qbar-psf</property>
           <property>metrics/Sw-sqft</property>
           <abs><property>fcs/ruddervator-right-pos-rad</property></abs>
-          <value> 0.02 </value>
+          <value> 0.02 </value>        <!-- CD per rad of right ruddervator, either direction -->
         </product>
       </function>
 
@@ -249,7 +251,7 @@
           <property>aero/qbar-psf</property>
           <property>metrics/Sw-sqft</property>
           <property>fcs/flap-left-pos-rad</property>
-          <value> 0.057 </value>
+          <value> 0.057 </value>       <!-- CD per rad of left flap -->
         </product>
       </function>
 
@@ -259,7 +261,7 @@
           <property>aero/qbar-psf</property>
           <property>metrics/Sw-sqft</property>
           <property>fcs/flap-right-pos-rad</property>
-          <value> 0.057 </value>
+          <value> 0.057 </value>       <!-- CD per rad of right flap -->
         </product>
       </function>
 
@@ -269,7 +271,7 @@
           <property>aero/qbar-psf</property>
           <property>metrics/Sw-sqft</property>
           <property>fcs/spoiler-left-pos-norm</property>
-          <value> 0.04 </value>
+          <value> 0.04 </value>        <!-- CD with the left spoiler fully deployed -->
         </product>
       </function>
 
@@ -279,7 +281,7 @@
           <property>aero/qbar-psf</property>
           <property>metrics/Sw-sqft</property>
           <property>fcs/spoiler-right-pos-norm</property>
-          <value> 0.04 </value>
+          <value> 0.04 </value>        <!-- CD with the right spoiler fully deployed -->
         </product>
       </function>
 
@@ -289,7 +291,7 @@
           <property>aero/qbar-psf</property>
           <property>metrics/Sw-sqft</property>
           <property>gear/unit[0]/pos-norm</property>
-          <value> 0.008 </value>
+          <value> 0.008 </value>       <!-- CD with the nose leg down -->
         </product>
       </function>
 
@@ -299,7 +301,7 @@
           <property>aero/qbar-psf</property>
           <property>metrics/Sw-sqft</property>
           <property>gear/unit[1]/pos-norm</property>
-          <value> 0.006 </value>
+          <value> 0.006 </value>       <!-- CD with the left main leg down -->
         </product>
       </function>
 
@@ -309,7 +311,7 @@
           <property>aero/qbar-psf</property>
           <property>metrics/Sw-sqft</property>
           <property>gear/unit[2]/pos-norm</property>
-          <value> 0.006 </value>
+          <value> 0.006 </value>       <!-- CD with the right main leg down -->
         </product>
       </function>
   </axis>
@@ -321,7 +323,7 @@
           <property>aero/qbar-psf</property>
           <property>metrics/Sw-sqft</property>
           <property>aero/beta-rad</property>
-          <value> -0.35 </value>
+          <value> -0.35 </value>       <!-- CY per rad of sideslip -->
         </product>
       </function>
 
@@ -332,7 +334,7 @@
           <property>metrics/Sw-sqft</property>
           <property>velocities/r-aero-rad_sec</property>
           <property>aero/bi2vel</property>
-          <value> 0.15 </value>
+          <value> 0.15 </value>        <!-- CY per unit yaw rate (r b / 2V) -->
         </product>
       </function>
 
@@ -342,7 +344,7 @@
           <property>aero/qbar-psf</property>
           <property>metrics/Sw-sqft</property>
           <property>fcs/ruddervator-left-pos-rad</property>
-          <value> 0.1 </value>
+          <value> 0.1 </value>         <!-- CY per rad of left ruddervator -->
         </product>
       </function>
 
@@ -352,7 +354,7 @@
           <property>aero/qbar-psf</property>
           <property>metrics/Sw-sqft</property>
           <property>fcs/ruddervator-right-pos-rad</property>
-          <value> -0.1 </value>
+          <value> -0.1 </value>        <!-- CY per rad of right ruddervator -->
         </product>
       </function>
   </axis>
@@ -365,7 +367,7 @@
           <property>metrics/Sw-sqft</property>
           <property>metrics/bw-ft</property>
           <property>aero/beta-rad</property>
-          <value> -0.08 </value>
+          <value> -0.08 </value>       <!-- Cl per rad of sideslip -->
         </product>
       </function>
 
@@ -378,7 +380,7 @@
           <property>velocities/p-aero-rad_sec</property>
           <property>aero/bi2vel</property>
           <property>scale/roll-damping</property>
-          <value> -0.45 </value>
+          <value> -0.45 </value>       <!-- Cl per unit roll rate (p b / 2V) -->
         </product>
       </function>
 
@@ -390,7 +392,7 @@
           <property>metrics/bw-ft</property>
           <property>velocities/r-aero-rad_sec</property>
           <property>aero/bi2vel</property>
-          <value> 0.1 </value>
+          <value> 0.1 </value>         <!-- Cl per unit yaw rate (r b / 2V) -->
         </product>
       </function>
 
@@ -402,7 +404,7 @@
           <property>metrics/bw-ft</property>
           <property>fcs/aileron-left-pos-rad</property>
           <property>scale/roll-power</property>
-          <value> 0.1 </value>
+          <value> 0.1 </value>         <!-- Cl per rad of left aileron -->
         </product>
       </function>
 
@@ -414,7 +416,7 @@
           <property>metrics/bw-ft</property>
           <property>fcs/aileron-right-pos-rad</property>
           <property>scale/roll-power</property>
-          <value> -0.1 </value>
+          <value> -0.1 </value>        <!-- Cl per rad of right aileron -->
         </product>
       </function>
 
@@ -425,7 +427,7 @@
           <property>metrics/Sw-sqft</property>
           <property>metrics/bw-ft</property>
           <property>fcs/flap-left-pos-rad</property>
-          <value> 0.057 </value>
+          <value> 0.057 </value>       <!-- Cl per rad of left flap -->
         </product>
       </function>
 
@@ -436,7 +438,7 @@
           <property>metrics/Sw-sqft</property>
           <property>metrics/bw-ft</property>
           <property>fcs/flap-right-pos-rad</property>
-          <value> -0.057 </value>
+          <value> -0.057 </value>      <!-- Cl per rad of right flap -->
         </product>
       </function>
 
@@ -447,7 +449,7 @@
           <property>metrics/Sw-sqft</property>
           <property>metrics/bw-ft</property>
           <property>fcs/spoiler-left-pos-norm</property>
-          <value> -0.03 </value>
+          <value> -0.03 </value>       <!-- Cl with the left spoiler fully deployed -->
         </product>
       </function>
 
@@ -458,7 +460,7 @@
           <property>metrics/Sw-sqft</property>
           <property>metrics/bw-ft</property>
           <property>fcs/spoiler-right-pos-norm</property>
-          <value> 0.03 </value>
+          <value> 0.03 </value>        <!-- Cl with the right spoiler fully deployed -->
         </product>
       </function>
 
@@ -469,7 +471,7 @@
           <property>metrics/Sw-sqft</property>
           <property>metrics/bw-ft</property>
           <property>fcs/ruddervator-left-pos-rad</property>
-          <value> 0.0063 </value>
+          <value> 0.0063 </value>      <!-- Cl per rad of left ruddervator -->
         </product>
       </function>
 
@@ -480,7 +482,7 @@
           <property>metrics/Sw-sqft</property>
           <property>metrics/bw-ft</property>
           <property>fcs/ruddervator-right-pos-rad</property>
-          <value> -0.0063 </value>
+          <value> -0.0063 </value>     <!-- Cl per rad of right ruddervator -->
         </product>
       </function>
   </axis>
@@ -494,6 +496,7 @@
           <property>metrics/cbarw-ft</property>
           <table>
             <independentVar lookup="row">aero/alpha-rad</independentVar>
+            <!-- angle of attack (rad)   coefficient -->
             <tableData>
                -3.1416    0.4019
                -1.5708    0.5812
@@ -540,7 +543,7 @@
           <property>velocities/q-aero-rad_sec</property>
           <property>aero/ci2vel</property>
           <property>scale/pitch-damping</property>
-          <value> -12 </value>
+          <value> -12 </value>         <!-- Cm per unit pitch rate (q c / 2V) -->
         </product>
       </function>
 
@@ -553,7 +556,7 @@
           <property>aero/alphadot-rad_sec</property>
           <property>aero/ci2vel</property>
           <property>scale/pitch-damping</property>
-          <value> -4 </value>
+          <value> -4 </value>          <!-- Cm per unit alpha rate (alpha-dot c / 2V) -->
         </product>
       </function>
 
@@ -564,7 +567,7 @@
           <property>metrics/Sw-sqft</property>
           <property>metrics/cbarw-ft</property>
           <property>fcs/flap-left-pos-rad</property>
-          <value> -0.0955 </value>
+          <value> -0.0955 </value>     <!-- Cm per rad of left flap -->
         </product>
       </function>
 
@@ -575,7 +578,7 @@
           <property>metrics/Sw-sqft</property>
           <property>metrics/cbarw-ft</property>
           <property>fcs/flap-right-pos-rad</property>
-          <value> -0.0955 </value>
+          <value> -0.0955 </value>     <!-- Cm per rad of right flap -->
         </product>
       </function>
 
@@ -587,7 +590,7 @@
           <property>metrics/cbarw-ft</property>
           <property>fcs/ruddervator-left-pos-rad</property>
           <property>scale/pitch-power</property>
-          <value> -0.315 </value>
+          <value> -0.315 </value>      <!-- Cm per rad of left ruddervator -->
         </product>
       </function>
 
@@ -599,7 +602,7 @@
           <property>metrics/cbarw-ft</property>
           <property>fcs/ruddervator-right-pos-rad</property>
           <property>scale/pitch-power</property>
-          <value> -0.315 </value>
+          <value> -0.315 </value>      <!-- Cm per rad of right ruddervator -->
         </product>
       </function>
   </axis>
@@ -612,7 +615,7 @@
           <property>metrics/Sw-sqft</property>
           <property>metrics/bw-ft</property>
           <property>aero/beta-rad</property>
-          <value> 0.08 </value>
+          <value> 0.08 </value>        <!-- Cn per rad of sideslip -->
         </product>
       </function>
 
@@ -624,7 +627,7 @@
           <property>metrics/bw-ft</property>
           <property>velocities/p-aero-rad_sec</property>
           <property>aero/bi2vel</property>
-          <value> -0.03 </value>
+          <value> -0.03 </value>       <!-- Cn per unit roll rate (p b / 2V) -->
         </product>
       </function>
 
@@ -637,7 +640,7 @@
           <property>velocities/r-aero-rad_sec</property>
           <property>aero/bi2vel</property>
           <property>scale/yaw-damping</property>
-          <value> -0.12 </value>
+          <value> -0.12 </value>       <!-- Cn per unit yaw rate (r b / 2V) -->
         </product>
       </function>
 
@@ -648,7 +651,7 @@
           <property>metrics/Sw-sqft</property>
           <property>metrics/bw-ft</property>
           <property>fcs/aileron-left-pos-rad</property>
-          <value> -0.012 </value>
+          <value> -0.012 </value>      <!-- Cn per rad of left aileron -->
         </product>
       </function>
 
@@ -659,7 +662,7 @@
           <property>metrics/Sw-sqft</property>
           <property>metrics/bw-ft</property>
           <property>fcs/aileron-right-pos-rad</property>
-          <value> 0.012 </value>
+          <value> 0.012 </value>       <!-- Cn per rad of right aileron -->
         </product>
       </function>
 
@@ -670,7 +673,7 @@
           <property>metrics/Sw-sqft</property>
           <property>metrics/bw-ft</property>
           <property>fcs/spoiler-left-pos-norm</property>
-          <value> -0.005 </value>
+          <value> -0.005 </value>      <!-- Cn with the left spoiler fully deployed -->
         </product>
       </function>
 
@@ -681,7 +684,7 @@
           <property>metrics/Sw-sqft</property>
           <property>metrics/bw-ft</property>
           <property>fcs/spoiler-right-pos-norm</property>
-          <value> 0.005 </value>
+          <value> 0.005 </value>       <!-- Cn with the right spoiler fully deployed -->
         </product>
       </function>
 
@@ -693,7 +696,7 @@
           <property>metrics/bw-ft</property>
           <property>fcs/ruddervator-left-pos-rad</property>
           <property>scale/yaw-power</property>
-          <value> -0.0345 </value>
+          <value> -0.0345 </value>     <!-- Cn per rad of left ruddervator -->
         </product>
       </function>
 
@@ -705,7 +708,7 @@
           <property>metrics/bw-ft</property>
           <property>fcs/ruddervator-right-pos-rad</property>
           <property>scale/yaw-power</property>
-          <value> 0.0345 </value>
+          <value> 0.0345 </value>      <!-- Cn per rad of right ruddervator -->
         </product>
       </function>
   </axis>

@@ -16,106 +16,107 @@
 <ground_reactions>
 
   <contact type="BOGEY" name="NOSE_WHEEL">
-    <location unit="M">
+    <location unit="M">                           <!-- nose wheel contact point: x aft, y right, z up -->
       <x> 0.20 </x>
       <y> 0.00 </y>
       <z> -0.15 </z>
     </location>
-    <static_friction> 0.8 </static_friction>
-    <dynamic_friction> 0.5 </dynamic_friction>
-    <rolling_friction> 0.02 </rolling_friction>
-    <spring_coeff unit="N/M"> 800 </spring_coeff>
-    <damping_coeff unit="N/M/SEC"> 20 </damping_coeff>
-    <max_steer unit="DEG"> 20 </max_steer>          <!-- SERVO12, fcs/steer-cmd-norm -->
-    <brake_group> NONE </brake_group>
-    <retractable> 1 </retractable>
+    <static_friction> 0.8 </static_friction>      <!-- tyre grip before sliding -->
+    <dynamic_friction> 0.5 </dynamic_friction>    <!-- tyre grip while sliding -->
+    <rolling_friction> 0.02 </rolling_friction>   <!-- rolling resistance -->
+    <spring_coeff unit="N/M"> 800 </spring_coeff>       <!-- strut stiffness -->
+    <damping_coeff unit="N/M/SEC"> 20 </damping_coeff>  <!-- strut damping -->
+    <max_steer unit="DEG"> 20 </max_steer>         <!-- steering angle at full command (SERVO12) -->
+    <brake_group> NONE </brake_group>              <!-- no brake -->
+    <retractable> 1 </retractable>                 <!-- 1 = retracts (FlightControl.xml) -->
   </contact>
 
   <contact type="BOGEY" name="LEFT_MAIN">
-    <location unit="M">
+    <location unit="M">                           <!-- left main wheel contact point: x aft, y right, z up -->
       <x> 0.56 </x>
       <y> -0.15 </y>
       <z> -0.15 </z>
     </location>
-    <static_friction> 0.8 </static_friction>
-    <dynamic_friction> 0.5 </dynamic_friction>
-    <rolling_friction> 0.02 </rolling_friction>
-    <spring_coeff unit="N/M"> 1500 </spring_coeff>
-    <damping_coeff unit="N/M/SEC"> 40 </damping_coeff>
-    <max_steer unit="DEG"> 0 </max_steer>
-    <brake_group> LEFT </brake_group>               <!-- SERVO13, fcs/left-brake-cmd-norm -->
-    <retractable> 1 </retractable>
+    <static_friction> 0.8 </static_friction>      <!-- tyre grip before sliding -->
+    <dynamic_friction> 0.5 </dynamic_friction>    <!-- tyre grip while sliding -->
+    <rolling_friction> 0.02 </rolling_friction>   <!-- rolling resistance -->
+    <spring_coeff unit="N/M"> 1500 </spring_coeff>      <!-- strut stiffness -->
+    <damping_coeff unit="N/M/SEC"> 40 </damping_coeff>  <!-- strut damping -->
+    <max_steer unit="DEG"> 0 </max_steer>          <!-- not steerable -->
+    <brake_group> LEFT </brake_group>              <!-- braked by the left brake (SERVO13) -->
+    <retractable> 1 </retractable>                 <!-- 1 = retracts (FlightControl.xml) -->
   </contact>
 
   <contact type="BOGEY" name="RIGHT_MAIN">
-    <location unit="M">
+    <location unit="M">                           <!-- right main wheel contact point: x aft, y right, z up -->
       <x> 0.56 </x>
       <y> 0.15 </y>
       <z> -0.15 </z>
     </location>
-    <static_friction> 0.8 </static_friction>
-    <dynamic_friction> 0.5 </dynamic_friction>
-    <rolling_friction> 0.02 </rolling_friction>
-    <spring_coeff unit="N/M"> 1500 </spring_coeff>
-    <damping_coeff unit="N/M/SEC"> 40 </damping_coeff>
-    <max_steer unit="DEG"> 0 </max_steer>
-    <brake_group> RIGHT </brake_group>              <!-- SERVO13, fcs/right-brake-cmd-norm -->
-    <retractable> 1 </retractable>
+    <static_friction> 0.8 </static_friction>      <!-- tyre grip before sliding -->
+    <dynamic_friction> 0.5 </dynamic_friction>    <!-- tyre grip while sliding -->
+    <rolling_friction> 0.02 </rolling_friction>   <!-- rolling resistance -->
+    <spring_coeff unit="N/M"> 1500 </spring_coeff>      <!-- strut stiffness -->
+    <damping_coeff unit="N/M/SEC"> 40 </damping_coeff>  <!-- strut damping -->
+    <max_steer unit="DEG"> 0 </max_steer>          <!-- not steerable -->
+    <brake_group> RIGHT </brake_group>             <!-- braked by the right brake (SERVO13) -->
+    <retractable> 1 </retractable>                 <!-- 1 = retracts (FlightControl.xml) -->
   </contact>
 
-  <!-- airframe -->
+  <!-- Airframe contacts, one line each: location (x aft, y right, z up from the nose), grip
+       before sliding, grip while sliding, structure stiffness, structure damping. -->
   <contact type="STRUCTURE" name="NOSE_TIP">
     <location unit="M"> <x> 0.00 </x> <y> 0.00 </y> <z> -0.05 </z> </location>
-    <static_friction> 0.8 </static_friction>
+    <static_friction> 0.8 </static_friction>      <!-- tyre grip before sliding -->
     <dynamic_friction> 0.6 </dynamic_friction>
     <spring_coeff unit="N/M"> 5000 </spring_coeff>
     <damping_coeff unit="N/M/SEC"> 200 </damping_coeff>
   </contact>
   <contact type="STRUCTURE" name="BELLY_FWD">
     <location unit="M"> <x> 0.30 </x> <y> 0.00 </y> <z> -0.08 </z> </location>
-    <static_friction> 0.8 </static_friction>
+    <static_friction> 0.8 </static_friction>      <!-- tyre grip before sliding -->
     <dynamic_friction> 0.6 </dynamic_friction>
     <spring_coeff unit="N/M"> 5000 </spring_coeff>
     <damping_coeff unit="N/M/SEC"> 200 </damping_coeff>
   </contact>
   <contact type="STRUCTURE" name="BELLY_AFT">
     <location unit="M"> <x> 0.85 </x> <y> 0.00 </y> <z> -0.07 </z> </location>
-    <static_friction> 0.8 </static_friction>
+    <static_friction> 0.8 </static_friction>      <!-- tyre grip before sliding -->
     <dynamic_friction> 0.6 </dynamic_friction>
     <spring_coeff unit="N/M"> 5000 </spring_coeff>
     <damping_coeff unit="N/M/SEC"> 200 </damping_coeff>
   </contact>
   <contact type="STRUCTURE" name="TAIL">
     <location unit="M"> <x> 1.20 </x> <y> 0.00 </y> <z> -0.03 </z> </location>
-    <static_friction> 0.8 </static_friction>
+    <static_friction> 0.8 </static_friction>      <!-- tyre grip before sliding -->
     <dynamic_friction> 0.6 </dynamic_friction>
     <spring_coeff unit="N/M"> 5000 </spring_coeff>
     <damping_coeff unit="N/M/SEC"> 200 </damping_coeff>
   </contact>
   <contact type="STRUCTURE" name="LEFT_WINGTIP">
     <location unit="M"> <x> 0.55 </x> <y> -0.80 </y> <z> 0.00 </z> </location>
-    <static_friction> 0.8 </static_friction>
+    <static_friction> 0.8 </static_friction>      <!-- tyre grip before sliding -->
     <dynamic_friction> 0.6 </dynamic_friction>
     <spring_coeff unit="N/M"> 5000 </spring_coeff>
     <damping_coeff unit="N/M/SEC"> 200 </damping_coeff>
   </contact>
   <contact type="STRUCTURE" name="RIGHT_WINGTIP">
     <location unit="M"> <x> 0.55 </x> <y> 0.80 </y> <z> 0.00 </z> </location>
-    <static_friction> 0.8 </static_friction>
+    <static_friction> 0.8 </static_friction>      <!-- tyre grip before sliding -->
     <dynamic_friction> 0.6 </dynamic_friction>
     <spring_coeff unit="N/M"> 5000 </spring_coeff>
     <damping_coeff unit="N/M/SEC"> 200 </damping_coeff>
   </contact>
   <contact type="STRUCTURE" name="LEFT_VTAIL_TIP">
     <location unit="M"> <x> 1.15 </x> <y> -0.16 </y> <z> 0.12 </z> </location>
-    <static_friction> 0.8 </static_friction>
+    <static_friction> 0.8 </static_friction>      <!-- tyre grip before sliding -->
     <dynamic_friction> 0.6 </dynamic_friction>
     <spring_coeff unit="N/M"> 5000 </spring_coeff>
     <damping_coeff unit="N/M/SEC"> 200 </damping_coeff>
   </contact>
   <contact type="STRUCTURE" name="RIGHT_VTAIL_TIP">
     <location unit="M"> <x> 1.15 </x> <y> 0.16 </y> <z> 0.12 </z> </location>
-    <static_friction> 0.8 </static_friction>
+    <static_friction> 0.8 </static_friction>      <!-- tyre grip before sliding -->
     <dynamic_friction> 0.6 </dynamic_friction>
     <spring_coeff unit="N/M"> 5000 </spring_coeff>
     <damping_coeff unit="N/M/SEC"> 200 </damping_coeff>

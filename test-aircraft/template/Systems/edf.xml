@@ -22,16 +22,16 @@
 -->
 <system name="EDF">
 
-  <property value="4.41">edf/static-thrust-lbs</property>
-  <property value="196.85">edf/exhaust-velocity-fps</property>
-  <property value="45000">edf/max-rpm</property>
+  <property value="4.41">edf/static-thrust-lbs</property>       <!-- thrust at full throttle standing still, lbf (19.6 N) -->
+  <property value="196.85">edf/exhaust-velocity-fps</property>  <!-- exhaust (efflux) speed, ft/s (60 m/s) -->
+  <property value="45000">edf/max-rpm</property>               <!-- fan speed at full throttle, rpm -->
 
   <channel name="EDF">
 
     <lag_filter name="edf/fan">
       <input>fcs/edf-throttle-cmd-norm</input>
-      <c1> 3.333 </c1>
-      <clipto> <min> 0 </min> <max> 1 </max> </clipto>
+      <c1> 3.333 </c1>                                     <!-- 1 / spool time constant (0.3 s) -->
+      <clipto> <min> 0 </min> <max> 1 </max> </clipto>     <!-- fan setting limits -->
       <output>edf/fan-norm</output>
     </lag_filter>
 
@@ -41,6 +41,7 @@
           <property>edf/static-thrust-lbs</property>
           <table>
             <independentVar>edf/fan-norm</independentVar>
+            <!-- fan setting   fraction of static thrust -->
             <tableData>
               0.00  0.00
               0.25  0.07

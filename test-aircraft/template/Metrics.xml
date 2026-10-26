@@ -5,28 +5,28 @@
   these three must be the same reference values the coefficients were computed with.
 -->
 <metrics>
-  <wingarea unit="M2"> 0.40 </wingarea>      <!-- reference area (XFLR5: projected planform) -->
-  <wingspan unit="M"> 1.60 </wingspan>       <!-- reference span -->
+  <wingarea unit="M2"> 0.40 </wingarea>      <!-- wing reference area (XFLR5: projected planform) -->
+  <wingspan unit="M"> 1.60 </wingspan>       <!-- wing reference span, tip to tip -->
   <chord unit="M"> 0.25 </chord>             <!-- mean aerodynamic chord -->
   <!-- V-tail, 0.08 m2 total panel area at 35 deg dihedral, split into its projections -->
-  <htailarea unit="M2"> 0.0655 </htailarea>  <!-- 0.08 * cos(35) -->
-  <htailarm unit="M"> 0.55 </htailarm>       <!-- CG to tail quarter chord -->
-  <vtailarea unit="M2"> 0.0459 </vtailarea>  <!-- 0.08 * sin(35) -->
-  <vtailarm unit="M"> 0.55 </vtailarm>
+  <htailarea unit="M2"> 0.0655 </htailarea>  <!-- horizontal tail area: 0.08 * cos(35) -->
+  <htailarm unit="M"> 0.55 </htailarm>       <!-- CG to tail quarter chord, horizontal -->
+  <vtailarea unit="M2"> 0.0459 </vtailarea>  <!-- vertical tail area: 0.08 * sin(35) -->
+  <vtailarm unit="M"> 0.55 </vtailarm>       <!-- CG to tail quarter chord, vertical -->
   <!-- Moments in Aero.xml are about this point; it is the nominal CG (Mass.xml), so the
        pitch-stability terms already include the static margin. -->
-  <location name="AERORP" unit="M">
-    <x> 0.50 </x>
-    <y> 0.00 </y>
-    <z> 0.00 </z>
+  <location name="AERORP" unit="M">          <!-- aerodynamic reference point, metres from the nose -->
+    <x> 0.50 </x>                            <!-- aft of the nose -->
+    <y> 0.00 </y>                            <!-- right of the centreline -->
+    <z> 0.00 </z>                            <!-- above the fuselage reference line -->
   </location>
   <!-- The autopilot's IMU: the bridge sends accelerations measured here. -->
-  <location name="EYEPOINT" unit="M">
+  <location name="EYEPOINT" unit="M">        <!-- IMU position: x aft, y right, z up -->
     <x> 0.50 </x>
     <y> 0.00 </y>
     <z> 0.02 </z>
   </location>
-  <location name="VRP" unit="M">
+  <location name="VRP" unit="M">             <!-- visual reference point for FlightGear models; unused -->
     <x> 0.00 </x>
     <y> 0.00 </y>
     <z> 0.00 </z>

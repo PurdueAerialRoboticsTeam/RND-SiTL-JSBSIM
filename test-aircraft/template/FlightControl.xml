@@ -23,39 +23,39 @@
 -->
 <flight_control name="template">
 
-  <property value="0">fcs/aileron-left-cmd-norm</property>
-  <property value="0">fcs/aileron-right-cmd-norm</property>
-  <property value="0">fcs/ruddervator-left-cmd-norm</property>
-  <property value="0">fcs/ruddervator-right-cmd-norm</property>
-  <property value="0">fcs/flap-left-cmd-norm</property>
-  <property value="0">fcs/flap-right-cmd-norm</property>
-  <property value="0">fcs/spoiler-left-cmd-norm</property>
-  <property value="0">fcs/spoiler-right-cmd-norm</property>
-  <property value="1">fcs/gear-nose-cmd-norm</property>
-  <property value="1">fcs/gear-main-cmd-norm</property>
-  <property value="0">fcs/edf-throttle-cmd-norm</property>
+  <property value="0">fcs/aileron-left-cmd-norm</property>     <!-- left aileron command, -1..1 (SERVO1) -->
+  <property value="0">fcs/aileron-right-cmd-norm</property>    <!-- right aileron command, -1..1 (SERVO2) -->
+  <property value="0">fcs/ruddervator-left-cmd-norm</property> <!-- left ruddervator command, -1..1 (SERVO4) -->
+  <property value="0">fcs/ruddervator-right-cmd-norm</property> <!-- right ruddervator command, -1..1 (SERVO5) -->
+  <property value="0">fcs/flap-left-cmd-norm</property>        <!-- left flap command, 0..1 (SERVO6) -->
+  <property value="0">fcs/flap-right-cmd-norm</property>       <!-- right flap command, 0..1 (SERVO7) -->
+  <property value="0">fcs/spoiler-left-cmd-norm</property>     <!-- left spoiler command, 0..1 (SERVO8) -->
+  <property value="0">fcs/spoiler-right-cmd-norm</property>    <!-- right spoiler command, 0..1 (SERVO9) -->
+  <property value="1">fcs/gear-nose-cmd-norm</property>        <!-- nose gear command, 1 = down at start (SERVO10) -->
+  <property value="1">fcs/gear-main-cmd-norm</property>        <!-- main gear command, 1 = down at start (SERVO11) -->
+  <property value="0">fcs/edf-throttle-cmd-norm</property>     <!-- EDF throttle command, 0..1 (SERVO3) -->
 
   <!-- Model scale factors for robustness sweeps (bridge option scale/...=VALUE); 1 = as modelled. -->
-  <property value="1">scale/lift</property>
-  <property value="1">scale/drag</property>
-  <property value="1">scale/roll-power</property>
-  <property value="1">scale/pitch-power</property>
-  <property value="1">scale/yaw-power</property>
-  <property value="1">scale/roll-damping</property>
-  <property value="1">scale/pitch-damping</property>
-  <property value="1">scale/yaw-damping</property>
+  <property value="1">scale/lift</property>                    <!-- lift multiplier -->
+  <property value="1">scale/drag</property>                    <!-- drag multiplier -->
+  <property value="1">scale/roll-power</property>              <!-- aileron effectiveness multiplier -->
+  <property value="1">scale/pitch-power</property>             <!-- ruddervator pitch effectiveness multiplier -->
+  <property value="1">scale/yaw-power</property>               <!-- ruddervator yaw effectiveness multiplier -->
+  <property value="1">scale/roll-damping</property>            <!-- roll damping multiplier -->
+  <property value="1">scale/pitch-damping</property>           <!-- pitch damping multiplier -->
+  <property value="1">scale/yaw-damping</property>             <!-- yaw damping multiplier -->
 
   <channel name="Ailerons">
     <aerosurface_scale name="Left aileron">
       <input>fcs/aileron-left-cmd-norm</input>
-      <domain> <min> -1 </min> <max> 1 </max> </domain>
-      <range> <min> -0.3491 </min> <max> 0.3491 </max> </range>
+      <domain> <min> -1 </min> <max> 1 </max> </domain>                <!-- command range -->
+      <range> <min> -0.3491 </min> <max> 0.3491 </max> </range>      <!-- surface throw, rad: +-20 deg -->
       <output>fcs/aileron-left-pos-rad</output>
     </aerosurface_scale>
     <aerosurface_scale name="Right aileron">
       <input>fcs/aileron-right-cmd-norm</input>
-      <domain> <min> -1 </min> <max> 1 </max> </domain>
-      <range> <min> -0.3491 </min> <max> 0.3491 </max> </range>
+      <domain> <min> -1 </min> <max> 1 </max> </domain>                <!-- command range -->
+      <range> <min> -0.3491 </min> <max> 0.3491 </max> </range>      <!-- surface throw, rad: +-20 deg -->
       <output>fcs/aileron-right-pos-rad</output>
     </aerosurface_scale>
   </channel>
@@ -63,14 +63,14 @@
   <channel name="V-tail">
     <aerosurface_scale name="Left ruddervator">
       <input>fcs/ruddervator-left-cmd-norm</input>
-      <domain> <min> -1 </min> <max> 1 </max> </domain>
-      <range> <min> -0.5236 </min> <max> 0.5236 </max> </range>
+      <domain> <min> -1 </min> <max> 1 </max> </domain>                <!-- command range -->
+      <range> <min> -0.5236 </min> <max> 0.5236 </max> </range>      <!-- surface throw, rad: +-30 deg -->
       <output>fcs/ruddervator-left-pos-rad</output>
     </aerosurface_scale>
     <aerosurface_scale name="Right ruddervator">
       <input>fcs/ruddervator-right-cmd-norm</input>
-      <domain> <min> -1 </min> <max> 1 </max> </domain>
-      <range> <min> -0.5236 </min> <max> 0.5236 </max> </range>
+      <domain> <min> -1 </min> <max> 1 </max> </domain>                <!-- command range -->
+      <range> <min> -0.5236 </min> <max> 0.5236 </max> </range>      <!-- surface throw, rad: +-30 deg -->
       <output>fcs/ruddervator-right-pos-rad</output>
     </aerosurface_scale>
   </channel>
@@ -78,14 +78,14 @@
   <channel name="Flaps">
     <pure_gain name="Left flap">
       <input>fcs/flap-left-cmd-norm</input>
-      <gain> 0.5236 </gain>
-      <clipto> <min> 0 </min> <max> 0.5236 </max> </clipto>
+      <gain> 0.5236 </gain>                                            <!-- full flap, rad: 30 deg -->
+      <clipto> <min> 0 </min> <max> 0.5236 </max> </clipto>            <!-- flap travel limits, rad -->
       <output>fcs/flap-left-pos-rad</output>
     </pure_gain>
     <pure_gain name="Right flap">
       <input>fcs/flap-right-cmd-norm</input>
-      <gain> 0.5236 </gain>
-      <clipto> <min> 0 </min> <max> 0.5236 </max> </clipto>
+      <gain> 0.5236 </gain>                                            <!-- full flap, rad: 30 deg -->
+      <clipto> <min> 0 </min> <max> 0.5236 </max> </clipto>            <!-- flap travel limits, rad -->
       <output>fcs/flap-right-pos-rad</output>
     </pure_gain>
   </channel>
@@ -93,14 +93,14 @@
   <channel name="Spoilers">
     <pure_gain name="Left spoiler">
       <input>fcs/spoiler-left-cmd-norm</input>
-      <gain> 1 </gain>
-      <clipto> <min> 0 </min> <max> 1 </max> </clipto>
+      <gain> 1 </gain>                                                 <!-- passes the command straight through -->
+      <clipto> <min> 0 </min> <max> 1 </max> </clipto>                 <!-- 0 = stowed / retracted, 1 = full / down -->
       <output>fcs/spoiler-left-pos-norm</output>
     </pure_gain>
     <pure_gain name="Right spoiler">
       <input>fcs/spoiler-right-cmd-norm</input>
-      <gain> 1 </gain>
-      <clipto> <min> 0 </min> <max> 1 </max> </clipto>
+      <gain> 1 </gain>                                                 <!-- passes the command straight through -->
+      <clipto> <min> 0 </min> <max> 1 </max> </clipto>                 <!-- 0 = stowed / retracted, 1 = full / down -->
       <output>fcs/spoiler-right-pos-norm</output>
     </pure_gain>
   </channel>
@@ -110,14 +110,14 @@
   <channel name="Landing gear">
     <pure_gain name="Nose gear">
       <input>fcs/gear-nose-cmd-norm</input>
-      <gain> 1 </gain>
-      <clipto> <min> 0 </min> <max> 1 </max> </clipto>
+      <gain> 1 </gain>                                                 <!-- passes the command straight through -->
+      <clipto> <min> 0 </min> <max> 1 </max> </clipto>                 <!-- 0 = stowed / retracted, 1 = full / down -->
       <output>gear/unit[0]/pos-norm</output>
     </pure_gain>
     <pure_gain name="Main gear">
       <input>fcs/gear-main-cmd-norm</input>
-      <gain> 1 </gain>
-      <clipto> <min> 0 </min> <max> 1 </max> </clipto>
+      <gain> 1 </gain>                                                 <!-- passes the command straight through -->
+      <clipto> <min> 0 </min> <max> 1 </max> </clipto>                 <!-- 0 = stowed / retracted, 1 = full / down -->
       <output>gear/unit[1]/pos-norm</output>
       <output>gear/unit[2]/pos-norm</output>
     </pure_gain>

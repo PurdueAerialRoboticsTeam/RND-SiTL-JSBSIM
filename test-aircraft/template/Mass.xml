@@ -24,27 +24,27 @@
   inertia/ixz-slugs_ft2 at run time.
 -->
 <mass_balance negated_crossproduct_inertia="true">
-  <ixx unit="KG*M2"> 0.15 </ixx>
-  <iyy unit="KG*M2"> 0.20 </iyy>
-  <izz unit="KG*M2"> 0.33 </izz>
-  <ixz unit="KG*M2"> 0.00 </ixz>
-  <emptywt unit="KG"> 1.70 </emptywt>
-  <location name="CG" unit="M">
-    <x> 0.512 </x>
-    <y> 0.000 </y>
-    <z> 0.000 </z>
+  <ixx unit="KG*M2"> 0.15 </ixx>          <!-- roll inertia: resistance to rolling (about the fuselage axis) -->
+  <iyy unit="KG*M2"> 0.20 </iyy>          <!-- pitch inertia: resistance to pitching nose up/down -->
+  <izz unit="KG*M2"> 0.33 </izz>          <!-- yaw inertia: resistance to yawing nose left/right -->
+  <ixz unit="KG*M2"> 0.00 </ixz>          <!-- roll-yaw product of inertia (diagonal mass spread in side view) -->
+  <emptywt unit="KG"> 1.70 </emptywt>     <!-- airframe mass, without the point masses below -->
+  <location name="CG" unit="M">           <!-- airframe centre of gravity, metres from the nose -->
+    <x> 0.512 </x>                        <!-- aft of the nose -->
+    <y> 0.000 </y>                        <!-- right of the centreline -->
+    <z> 0.000 </z>                        <!-- above the fuselage reference line -->
   </location>
   <pointmass name="BATTERY">
-    <weight unit="KG"> 0.60 </weight>
-    <location name="POINTMASS" unit="M">
+    <weight unit="KG"> 0.60 </weight>     <!-- battery mass -->
+    <location name="POINTMASS" unit="M">  <!-- battery position: x aft, y right, z up -->
       <x> 0.45 </x>
       <y> 0.00 </y>
       <z> 0.00 </z>
     </location>
   </pointmass>
   <pointmass name="PAYLOAD">
-    <weight unit="KG"> 0.20 </weight>
-    <location name="POINTMASS" unit="M">
+    <weight unit="KG"> 0.20 </weight>     <!-- payload mass -->
+    <location name="POINTMASS" unit="M">  <!-- payload position: x aft, y right, z up -->
       <x> 0.55 </x>
       <y> 0.00 </y>
       <z> -0.02 </z>

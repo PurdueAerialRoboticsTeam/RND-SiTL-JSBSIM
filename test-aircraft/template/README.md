@@ -7,7 +7,9 @@ nose-wheel steering, wheel brakes, and an electric ducted fan (EDF).
 
 **Every number is a placeholder** for a generic 2.5 kg, 1.6 m span aircraft.
 The structure (inputs, servo map, subsystems) is meant to stay; the numbers
-are meant to be replaced. The table at the end lists where each one lives.
+are meant to be replaced. **`MODELING-GUIDE.md` is the step-by-step guide
+to filling in every value from CAD and XFLR5**; the table at the end of this
+file lists where each one lives.
 
 ## Fly it
 
@@ -123,6 +125,6 @@ inverted. `Controls.xml` explains each.
 
 The aircraft modeling plan (`sitl-docker/AIRCRAFT-MODELING-PLAN.md` on the
 `aircraft-modeling` branch) describes the XFLR5 workflow for these numbers.
-To start a new aircraft from this one, copy the folder, rename `template.xml`
-and the parameter file to the new name, and change the `name` in
-`template.xml`'s `<fdm_config>`.
+To start a new aircraft from this one, follow step 0 of `MODELING-GUIDE.md`:
+copy the folder, rename `template.xml` and the parameter file to the new
+name, and change the `name` in its `<fdm_config>`.

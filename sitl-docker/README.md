@@ -87,6 +87,92 @@ runs, and compiling from the Windows drive through Docker is very slow.
 **Linux:** the container runs as uid 1000. If `id -u` prints something else,
 build with `docker compose build --build-arg UID=$(id -u) --build-arg GID=$(id -g)`.
 
+## Running the Simulator Using the Python CLI
+
+The Python-based Command Line Interface (CLI) simplifies the process of starting, stopping, and checking the status of the ArduPilot SITL simulator, as well as launching FlightGear for 3D visualization. Instead of manually entering multiple Docker and FlightGear commands, users can manage these operations through `sim.py`.
+
+### Getting Started
+
+Before running the CLI, make sure Docker Desktop, QGroundControl, and FlightGear are installed. Follow the first-time setup instructions above to clone the repository and build the Docker image.
+
+Navigate to the `sitl-docker` directory:
+
+```bash
+cd RND-SiTL-JSBSIM/sitl-docker
+```
+
+To view all available CLI commands:
+
+```bash
+python3 sim.py --help
+```
+
+### Available Commands
+
+| Command | Description |
+|---|---|
+| `python3 sim.py start` | Starts the Docker simulator |
+| `python3 sim.py stop` | Stops and removes the simulator's Docker Compose containers |
+| `python3 sim.py status` | Displays the current status of the Docker containers |
+| `python3 sim.py flightgear` | Launches FlightGear using `fgview.sh` |
+| `python3 sim.py start --aircraft c172` | Accepts the C172 aircraft selection (configuration integration in progress) |
+| `python3 sim.py start --aircraft advanced` | Accepts the advanced plane selection (configuration integration in progress) |
+
+**Note:** The `--aircraft` option is currently under development. Although the CLI accepts the aircraft selection, it does not yet change the aircraft being simulated by JSBSim.
+
+### Launching a Simulation
+
+**Step 1: Launch FlightGear**
+
+Open a terminal in the `sitl-docker` directory and run:
+
+```bash
+python3 sim.py flightgear
+```
+
+This launches FlightGear as a 3D viewer for the simulated aircraft. Keep FlightGear running.
+
+**Step 2: Start the Docker simulator**
+
+Open another terminal in the same directory and run:
+
+```bash
+python3 sim.py start
+```
+
+This starts the ArduPilot SITL simulator through Docker Compose. Keep this terminal open while the simulator is running.
+
+**Step 3: Connect QGroundControl**
+
+1. Open QGroundControl.
+2. Create or select a TCP communication link.
+3. Set the server address to `127.0.0.1` and the port to `5760`.
+4. Connect to the simulator.
+
+Once connected, QGroundControl can be used to monitor and control the simulated aircraft. FlightGear displays its flight behavior in a 3D environment.
+
+For FlightGear visualization to work, the simulator must also be configured to send flight-dynamics data to FlightGear on UDP port `5503`.
+
+### Checking and Stopping the Simulator
+
+To check whether the Docker containers are running:
+
+```bash
+python3 sim.py status
+```
+
+To stop the simulator, run the following command from another terminal:
+
+```bash
+python3 sim.py stop
+```
+
+You can also press `Ctrl+C` in the terminal running `python3 sim.py start`.
+
+### Future CLI Development
+
+The CLI is being developed to support additional features, including selecting different aircraft models and simplifying the process of launching and configuring the simulation environment. The goal is to make the simulator easier for members across PART subteams to use for aircraft testing and development.
+
 ## Everyday workflow
 
 Get everyone else's changes, then start the simulator. It recompiles only what

@@ -5,7 +5,22 @@ from pathlib import Path
 
 def start_simulator(aircraft):
     print(f"Starting PART Simulator with {aircraft}...")
-    subprocess.run(["docker", "compose", "up"])
+
+    aircraft_models = {
+        "c172": "c172p",
+        "advanced": "advanced_plane"
+    }
+
+    model = aircraft_models[aircraft]
+
+    subprocess.run([
+        "docker", "compose", "run",
+        "--rm",
+        "--service-ports",
+        "-e", "SIM_BACKEND=json",
+        "-e", f"JSBSIM_MODEL={model}",
+        "sitl"
+    ])
 
 def stop_simulator():
     print("Stopping PART Simulator...")

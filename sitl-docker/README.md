@@ -89,11 +89,11 @@ build with `docker compose build --build-arg UID=$(id -u) --build-arg GID=$(id -
 
 ## Running the Simulator Using the Python CLI
 
-The Python-based Command Line Interface (CLI) simplifies the process of starting, stopping, and checking the status of the ArduPilot SITL simulator, as well as launching FlightGear for 3D visualization. Instead of manually entering multiple Docker and FlightGear commands, users can manage these operations through `sim.py`.
+The Python-based Command Line Interface (CLI) simplifies the process of launching and managing the ArduPilot SITL simulator. Instead of manually entering multiple Docker commands, users can start, stop, and check the simulator's status, launch FlightGear, and select different aircraft models through `sim.py`.
 
 ### Getting Started
 
-Before running the CLI, make sure Docker Desktop, QGroundControl, and FlightGear are installed. Follow the first-time setup instructions above to clone the repository and build the Docker image.
+Before running the CLI, make sure Docker Desktop, QGroundControl, and FlightGear are installed and configured. Follow the first-time setup instructions above to clone the repository and build the Docker image.
 
 Navigate to the `sitl-docker` directory:
 
@@ -101,7 +101,7 @@ Navigate to the `sitl-docker` directory:
 cd RND-SiTL-JSBSIM/sitl-docker
 ```
 
-To view all available CLI commands:
+To view all available commands:
 
 ```bash
 python3 sim.py --help
@@ -111,14 +111,12 @@ python3 sim.py --help
 
 | Command | Description |
 |---|---|
-| `python3 sim.py start` | Starts the Docker simulator |
-| `python3 sim.py stop` | Stops and removes the simulator's Docker Compose containers |
-| `python3 sim.py status` | Displays the current status of the Docker containers |
-| `python3 sim.py flightgear` | Launches FlightGear using `fgview.sh` |
-| `python3 sim.py start --aircraft c172` | Accepts the C172 aircraft selection (configuration integration in progress) |
-| `python3 sim.py start --aircraft advanced` | Accepts the advanced plane selection (configuration integration in progress) |
-
-**Note:** The `--aircraft` option is currently under development. Although the CLI accepts the aircraft selection, it does not yet change the aircraft being simulated by JSBSim.
+| `python3 sim.py start` | Starts the simulator with the default C172P aircraft |
+| `python3 sim.py start --aircraft c172` | Starts the simulator with the Cessna 172P |
+| `python3 sim.py start --aircraft advanced` | Starts the simulator with the advanced plane |
+| `python3 sim.py stop` | Stops the Docker Compose services |
+| `python3 sim.py status` | Displays the status of Docker Compose services |
+| `python3 sim.py flightgear` | Launches FlightGear for 3D visualization |
 
 ### Launching a Simulation
 
@@ -130,48 +128,81 @@ Open a terminal in the `sitl-docker` directory and run:
 python3 sim.py flightgear
 ```
 
-This launches FlightGear as a 3D viewer for the simulated aircraft. Keep FlightGear running.
+This launches FlightGear using the existing `fgview.sh` script.
 
-**Step 2: Start the Docker simulator**
+**Step 2: Start the Simulator**
 
-Open another terminal in the same directory and run:
+Open another terminal in the same directory and select the aircraft you want to simulate.
+
+For the Cessna 172P:
 
 ```bash
-python3 sim.py start
+python3 sim.py start --aircraft c172
 ```
 
-This starts the ArduPilot SITL simulator through Docker Compose. Keep this terminal open while the simulator is running.
+For the advanced plane:
+
+```bash
+python3 sim.py start --aircraft advanced
+```
+
+If no aircraft is specified, the CLI defaults to the C172P.
+
+The CLI uses the JSBSim JSON backend and automatically passes the selected aircraft model to Docker.
+
+For example, selecting the C172P executes the equivalent of:
+
+```bash
+docker compose run --rm --service-ports -e SIM_BACKEND=json -e JSBSIM_MODEL=c172p sitl
+```
+
+Selecting the advanced plane uses `JSBSIM_MODEL=advanced_plane` instead.
 
 **Step 3: Connect QGroundControl**
 
 1. Open QGroundControl.
 2. Create or select a TCP communication link.
-3. Set the server address to `127.0.0.1` and the port to `5760`.
+3. Set the server address to `127.0.0.1` and port to `5760`.
 4. Connect to the simulator.
 
-Once connected, QGroundControl can be used to monitor and control the simulated aircraft. FlightGear displays its flight behavior in a 3D environment.
+Once connected, QGroundControl can be used to monitor and control the aircraft, while FlightGear provides a 3D visualization of its flight behavior.
 
-For FlightGear visualization to work, the simulator must also be configured to send flight-dynamics data to FlightGear on UDP port `5503`.
+FlightGear visualization requires the simulator to be configured to send flight-dynamics data to the host on UDP port `5503`.
 
 ### Checking and Stopping the Simulator
 
-To check whether the Docker containers are running:
+To check the status of the Docker Compose services:
 
 ```bash
 python3 sim.py status
 ```
 
-To stop the simulator, run the following command from another terminal:
+To stop a simulator launched with `python3 sim.py start`, press `Ctrl+C` in the terminal running the simulation.
+
+The CLI also provides:
 
 ```bash
 python3 sim.py stop
 ```
 
-You can also press `Ctrl+C` in the terminal running `python3 sim.py start`.
+This executes `docker compose down`. Because the `start` command uses `docker compose run --rm`, the preferred way to stop that temporary simulation container is `Ctrl+C`.
 
-### Future CLI Development
+### Aircraft Selection
 
-The CLI is being developed to support additional features, including selecting different aircraft models and simplifying the process of launching and configuring the simulation environment. The goal is to make the simulator easier for members across PART subteams to use for aircraft testing and development.
+The CLI currently supports two aircraft:
+
+| CLI Aircraft Name | JSBSim Model | Description |
+|---|---|---|
+| `c172` | `c172p` | Cessna 172P general aviation aircraft |
+| `advanced` | `advanced_plane` | Small electric test plane |
+
+Aircraft selection is implemented using the `SIM_BACKEND` and `JSBSIM_MODEL` environment variables. The JSON backend allows aircraft-specific control mappings, including additional servo channels.
+
+For more information about the aircraft models, see `test-aircraft/README.md`.
+
+### Future Development
+
+Future CLI improvements may include automatically launching all simulation software through a single command, configuring additional aircraft parameters, and simplifying the overall simulation workflow for members across PART subteams.
 
 ## Everyday workflow
 

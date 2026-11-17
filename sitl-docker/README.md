@@ -87,6 +87,123 @@ runs, and compiling from the Windows drive through Docker is very slow.
 **Linux:** the container runs as uid 1000. If `id -u` prints something else,
 build with `docker compose build --build-arg UID=$(id -u) --build-arg GID=$(id -g)`.
 
+## Running the Simulator Using the Python CLI
+
+The Python-based Command Line Interface (CLI) simplifies the process of launching and managing the ArduPilot SITL simulator. Instead of manually entering multiple Docker commands, users can start, stop, and check the simulator's status, launch FlightGear, and select different aircraft models through `sim.py`.
+
+### Getting Started
+
+Before running the CLI, make sure Docker Desktop, QGroundControl, and FlightGear are installed and configured. Follow the first-time setup instructions above to clone the repository and build the Docker image.
+
+Navigate to the `sitl-docker` directory:
+
+```bash
+cd RND-SiTL-JSBSIM/sitl-docker
+```
+
+To view all available commands:
+
+```bash
+python3 sim.py --help
+```
+
+### Available Commands
+
+| Command | Description |
+|---|---|
+| `python3 sim.py start` | Starts the simulator with the default C172P aircraft |
+| `python3 sim.py start --aircraft c172` | Starts the simulator with the Cessna 172P |
+| `python3 sim.py start --aircraft advanced` | Starts the simulator with the advanced plane |
+| `python3 sim.py stop` | Stops the Docker Compose services |
+| `python3 sim.py status` | Displays the status of Docker Compose services |
+| `python3 sim.py flightgear` | Launches FlightGear for 3D visualization |
+
+### Launching a Simulation
+
+**Step 1: Launch FlightGear**
+
+Open a terminal in the `sitl-docker` directory and run:
+
+```bash
+python3 sim.py flightgear
+```
+
+This launches FlightGear using the existing `fgview.sh` script.
+
+**Step 2: Start the Simulator**
+
+Open another terminal in the same directory and select the aircraft you want to simulate.
+
+For the Cessna 172P:
+
+```bash
+python3 sim.py start --aircraft c172
+```
+
+For the advanced plane:
+
+```bash
+python3 sim.py start --aircraft advanced
+```
+
+If no aircraft is specified, the CLI defaults to the C172P.
+
+The CLI uses the JSBSim JSON backend and automatically passes the selected aircraft model to Docker.
+
+For example, selecting the C172P executes the equivalent of:
+
+```bash
+docker compose run --rm --service-ports -e SIM_BACKEND=json -e JSBSIM_MODEL=c172p sitl
+```
+
+Selecting the advanced plane uses `JSBSIM_MODEL=advanced_plane` instead.
+
+**Step 3: Connect QGroundControl**
+
+1. Open QGroundControl.
+2. Create or select a TCP communication link.
+3. Set the server address to `127.0.0.1` and port to `5760`.
+4. Connect to the simulator.
+
+Once connected, QGroundControl can be used to monitor and control the aircraft, while FlightGear provides a 3D visualization of its flight behavior.
+
+FlightGear visualization requires the simulator to be configured to send flight-dynamics data to the host on UDP port `5503`.
+
+### Checking and Stopping the Simulator
+
+To check the status of the Docker Compose services:
+
+```bash
+python3 sim.py status
+```
+
+To stop a simulator launched with `python3 sim.py start`, press `Ctrl+C` in the terminal running the simulation.
+
+The CLI also provides:
+
+```bash
+python3 sim.py stop
+```
+
+This executes `docker compose down`. Because the `start` command uses `docker compose run --rm`, the preferred way to stop that temporary simulation container is `Ctrl+C`.
+
+### Aircraft Selection
+
+The CLI currently supports two aircraft:
+
+| CLI Aircraft Name | JSBSim Model | Description |
+|---|---|---|
+| `c172` | `c172p` | Cessna 172P general aviation aircraft |
+| `advanced` | `advanced_plane` | Small electric test plane |
+
+Aircraft selection is implemented using the `SIM_BACKEND` and `JSBSIM_MODEL` environment variables. The JSON backend allows aircraft-specific control mappings, including additional servo channels.
+
+For more information about the aircraft models, see `test-aircraft/README.md`.
+
+### Future Development
+
+Future CLI improvements may include automatically launching all simulation software through a single command, configuring additional aircraft parameters, and simplifying the overall simulation workflow for members across PART subteams.
+
 ## Everyday workflow
 
 Get everyone else's changes, then start the simulator. It recompiles only what
